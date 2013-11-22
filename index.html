@@ -3,12 +3,67 @@
 <style>
 
 body {
-  font-family: "Helvetica Neue","Helvetica","Arial",sans-serif;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background-color: #000;
 }
 
-#infopane {
+h1, h2, h3, p, text {
+  font-family: "Gill Sans","Helvetica Neue","Helvetica","Arial",sans-serif;
+  font-weight: lighter;
+}
+
+#container {
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+#header {
+  color: #fff;
+  margin: 0;
+  border: 0;
+  padding: 10px 0 20px 20px;
+}
+
+#title {
+  font-size: 50px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+#byline {
+  font-size: 20px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+#mapContainer {
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+#mapContainer svg {
+    display: block;
+    margin: 0 auto;
+    border: 0;
+    padding: 0;
+}
+
+#infoContainer {
+  color: #fff;
+  margin: 0;
+  border: 0;
+  padding: 10px 0;
+}
+
+#infoPane {
   visibility: hidden;
-  width: 1160px;
+  width: 100%;
   text-align: center;
 }
 
@@ -17,7 +72,7 @@ body {
 }
 
 .background {
-  fill: none;
+  fill: #000;
   pointer-events: all;
 }
 
@@ -44,56 +99,79 @@ body {
 <body>
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="http://d3js.org/topojson.v1.min.js"></script>
+
+<div id="container">
+  <div id="header">
+    <p id="title">Shenzhen Creative Index</p>
+    <p id="byline">by Erhardt Graeff, Carey Anne Nadeau, Alicia Rouault</p>
+  </div>
+  <div id="mapContainer">
+      <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="600" id="map"></svg>
+  </div>
+  <div id="infoContainer">
+    <div id="infoPane">
+      <h3>Information</h3>
+      <p>Township: <span id="townshipinfo">null</span></p>
+      <p>District: <span id="districtinfo">null</span></p>
+    </div>    
+  </div>
+</div>
+
 <script>
 
-var width = 1160,
-    height = 600,
-    centered;
+var color = d3.scale.category10();
+
+var map = d3.select("svg");
+
+var width = getWidth();
+var height = map.attr("height");
+var centered;
 
 var projection = d3.geo.mercator()
-	.center([114.1333,22.6333])
+  .center([114.1333,22.6333])
     .scale(65000)
     .translate([width / 2, height / 2]);
 
 var path = d3.geo.path()
     .projection(projection);
 
-var svg = d3.select("body").append("svg")
-    .attr("width", width)
-    .attr("height", height);
+var gw = map.append("g").attr("id","waterboundaries")
+var gt = map.append("g").attr("id","townships");
 
-var color = d3.scale.category10();
+// Add waterboundary
+d3.json("data/waterboundary.json", function(error, wb) {
+  gw.selectAll(".waterboundary")
+    .data(wb.features)
+    .enter().append("path")
+    .attr("class","waterboundary")
+    .attr("d", path)
+    .attr("fill", "#1C6BA0")
+})
 
-svg.append("rect")
-    .attr("class", "background")
-    .attr("width", width)
-    .attr("height", height)
+// Add township polygons
+d3.json("data/townships.json", function(error, sz) {
+	console.log(sz);
+	gt.selectAll(".township")
+  	.data(sz.features)
+    .enter().append("path")
+  	.attr("class", function(d) { return "township " + "t" + sz.features.indexOf(d); })
+  	.attr("d", path)
+    // colors for categories
+    .attr("fill", function(d) { return color(d.properties.ENAME3); })
+    // mouseover changes township fill and shows label
+  	.on("mouseover", function(d) {
+      d3.select(this).style({'fill':'#fff'});
+  		d3.selectAll(".township-label.t" + sz.features.indexOf(d)).style("visibility","visible");
+  	})
+  	.on("mouseout", function(d) {
+      d3.selectAll(".township").style({'fill': function (d) { return color(d.properties.ENAME3)}});
+      d3.selectAll(".township-label").style("visibility","hidden");
+      d3.selectAll(".township.active").style({'fill':'#fff'}); // keeps active township white
+  	})
     .on("click", clicked);
 
-var g = svg.append("g");
-
-d3.json("townships.json", function(error, sz) {
-	console.log(sz);
-  	g.selectAll("path")
-    	.data(sz.features)
-      .enter().append("path")
-    	.attr("class", function(d) { return "township " + "t" + sz.features.indexOf(d); })
-    	.attr("d", path)
-      // colors for categories
-      .attr("fill", function(d) { return color(d.properties.ENAME3); })
-      // mouseover changes township fill and shows label
-    	.on("mouseover", function(d) {
-        d3.select(this).style({'fill':'#fff'});
-    		d3.selectAll(".township-label.t" + sz.features.indexOf(d)).style("visibility","visible");
-    	})
-    	.on("mouseout", function(d) {
-        d3.selectAll(".township").style({'fill': function (d) { return color(d.properties.ENAME3)}});
-        d3.selectAll(".township-label").style("visibility","hidden");
-        d3.selectAll(".township.active").style({'fill':'#fff'}); // keeps active township white
-    	})
-      .on("click", clicked);
-
-	g.selectAll(".township-label")
+  // Add township labels
+	gt.selectAll(".township-label")
 	    .data(sz.features)
 	  .enter().append("text")
 	    .attr("class", function(d) { return "township-label " + "t" + sz.features.indexOf(d); })
@@ -129,13 +207,19 @@ function clicked(d) {
     centered = null;
   }
 
-  g.selectAll("path")
+  gt.selectAll("path")
+      .classed("active", centered && function(d) { return d === centered; });
+  gw.selectAll("path")
       .classed("active", centered && function(d) { return d === centered; });
 
-  g.transition()
-      .duration(750)
-      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
-      .style("stroke-width", 1.5 / k + "px");
+  gt.transition()
+    .duration(750)
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+    .style("stroke-width", 1.5 / k + "px");
+  gw.transition()
+    .duration(750)
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+    .style("stroke-width", 1.5 / k + "px");
 
   if (d && centered !== d) {
     hideInfo(d);
@@ -145,7 +229,7 @@ function clicked(d) {
 }
 
 function showInfo(d) {
-  ip = document.getElementById('infopane');
+  ip = document.getElementById('infoPane');
   ip.style.visibility = "visible";
   document.getElementById('townshipinfo').innerHTML = d.properties.ENAME;
 
@@ -156,15 +240,15 @@ function showInfo(d) {
 }
 
 function hideInfo(d) {
-  ip = document.getElementById('infopane');
+  ip = document.getElementById('infoPane');
   ip.style.visibility = "hidden";
   return;
 }
 
+// Determines page width
+function getWidth() {
+  return parseInt(window.innerWidth);
+}
+
 
 </script>
-<div id="infopane">
-  <h3>Information</h3>
-  <p>Township: <span id="townshipinfo">null</span></p>
-  <p>District: <span id="districtinfo">null</span></p>
-</div>
