@@ -125,14 +125,19 @@ h1, h2, h3, p, text {
 
 <script>
 
+/* Set color palette for township choropleth, 
+    offset +1 to remove near-white color (see +1 near fill attr) */
 var townColor = d3.scale.ordinal()
-  .domain([0,4])
-  .range(colorbrewer.Greens[5]);
+  .domain([0,5])
+  .range(colorbrewer.Greens[6]);
 
+/* Set color palette for grid choropleth, 
+    offset +1 to remove near-white color (see +1 near fill attr) */
 var gridColor = d3.scale.ordinal()
-  .domain([0,4])
-  .range(colorbrewer.Oranges[5]);
+  .domain([0,5])
+  .range(colorbrewer.Oranges[6]);
 
+// Quantize town and grid square indices into quartiles
 var townQuantize = d3.scale.quantize()
     .domain([0, 9])
     .range(d3.range(4));
@@ -141,25 +146,30 @@ var gridQuantize = d3.scale.quantize()
     .domain([418, 4664])
     .range(d3.range(4));
 
+// Set main map svg element 
 var map = d3.select("svg");
 
+// Set dimensions of the map based on map element dimensions
 var width = getWidth();
 var height = map.attr("height");
 var centered;
 
+// Set projection of map to Mercator and center over Shenzhen
 var projection = d3.geo.mercator()
   .center([114.1333,22.6333])
     .scale(65000)
     .translate([width / 2, height / 2]);
 
+// Set all path elements to conform to the selected projection
 var path = d3.geo.path()
     .projection(projection);
 
+// Add path groups to map in order to ensure layering bottom to top
 var gw = map.append("g").attr("id","waterboundaries");
 var gt = map.append("g").attr("id","townships");
 var gg = map.append("g").attr("id","grids");
 
-// Add waterboundary
+// Add waterboundary polygon
 d3.json("data/waterboundary.json", function(error, wb) {
   gw.selectAll(".waterboundary")
     .data(wb.features)
@@ -178,14 +188,14 @@ d3.json("data/townships.json", function(error, sz) {
     	.attr("class", function(d) { return "township " + "t" + sz.features.indexOf(d); })
     	.attr("d", path)
       // colors for categories
-      .attr("fill", function(d) { return townColor(townQuantize(d.properties.Input_FID)); })
+      .attr("fill", function(d) { return townColor(townQuantize(d.properties.Input_FID)+1); })
       // mouseover changes township fill and shows label
     	.on("mouseover", function(d) {
         d3.select(this).attr("fill", "orange");
     		d3.selectAll(".township-label.t" + sz.features.indexOf(d)).style("visibility","visible");
     	})
     	.on("mouseout", function(d) {
-        d3.selectAll(".township").attr("fill", function (d) { return townColor(townQuantize(d.properties.Input_FID)); });
+        d3.selectAll(".township").attr("fill", function (d) { return townColor(townQuantize(d.properties.Input_FID)+1); });
         d3.selectAll(".township-label").style("visibility","hidden");
         d3.selectAll(".township.active").attr("fill","orange"); // keeps active township orange
     	})
@@ -207,18 +217,19 @@ d3.json("data/townships.json", function(error, sz) {
       .on("click", clicked);
 });
 
-// Add grid squares
+// Add grid square polygons
 d3.json("data/luohu.json", function(error, gs) {
   gg.selectAll(".gridsquare")
     .data(gs.features)
     .enter().append("path")
       .attr("class","gridsquare")
       .attr("d", path)
-      .attr("fill", function(d) { return gridColor(gridQuantize(d.properties.PageNumber)); })
+      .attr("fill", function(d) { return gridColor(gridQuantize(d.properties.PageNumber)+1); })
       .on("click", clicked);
 });
 
-/* Click and zoom function based on http://bl.ocks.org/mbostock/2206590 */
+/* Click and zoom to townships 
+    (based on http://bl.ocks.org/mbostock/2206590) */
 function clicked(d) {
   var x, y, k;
 
@@ -266,6 +277,7 @@ function clicked(d) {
   }
 }
 
+// Show information pane below map
 function showInfo(d) {
   ip = document.getElementById('infoPane');
   ip.style.visibility = "visible";
@@ -277,6 +289,7 @@ function showInfo(d) {
   return;
 }
 
+// Hide information pane below map
 function hideInfo(d) {
   ip = document.getElementById('infoPane');
   ip.style.visibility = "hidden";
