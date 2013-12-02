@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<link href="libs/css/popover.css" rel="stylesheet">
+<link href="libs/css/popover-override.css" rel="stylesheet">
 <style>
 
 body {
@@ -9,9 +11,14 @@ body {
   background-color: #000;
 }
 
-h1, h2, h3, p, text {
+h1, h2, h3, p, ul, text, .popover {
   font-family: "Gill Sans","Helvetica Neue","Helvetica","Arial",sans-serif;
   font-weight: lighter;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
 }
 
 #container {
@@ -24,18 +31,34 @@ h1, h2, h3, p, text {
   color: #fff;
   margin: 0;
   border: 0;
-  padding: 10px 0 20px 20px;
+  padding: 10px 25px 10px 20px;
+  top: 0;
+  left: 0;
+  position: absolute;
+  background-color: #000;
 }
 
 #title {
-  font-size: 50px;
-  margin: 0;
+  font-size: 45px;
+  margin: 0 15px 0 0;
   border: 0;
-  padding: 0;
+  border-right: #fff 1px solid;
+  padding: 0 15px 0 0;
+  display: inline;
+  float: left;
 }
 
 #byline {
-  font-size: 20px;
+  font-size: 15px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  display: inline;
+  list-style-type: none;
+  float: left;
+}
+
+#byline li {
   margin: 0;
   border: 0;
   padding: 0;
@@ -76,17 +99,20 @@ h1, h2, h3, p, text {
   pointer-events: all;
 }
 
+.gridsquare {
+  stroke-width: 0.5px;
+  stroke: #000;
+}
+
 .township {
   stroke: #000;
   stroke-opacity: 1;
-  stroke-width: 0.75px;
+  stroke-width: 0.5px;
+  cursor: pointer;
 }
 
 .township.active {
-  fill: orange;
-  stroke: #000;
-  stroke-width: 2px;
-  stroke-opacity: 1;
+  opacity: 0.75;
 }
 
 .township-label {
@@ -99,59 +125,85 @@ h1, h2, h3, p, text {
 
 .gridsquare {
   visibility: hidden;
+  stroke-width: 0.5px;
+  cursor: pointer;
+}
+
+.chart div {
+  background-color: green;
+  border: 1px white solid;
+  border-left: 0;
+  border-collapse: collapse;
+  margin: 0;
+  padding: 0;
 }
 
 </style>
 <body>
-<script src="http://d3js.org/d3.v3.min.js"></script>
-<script src="http://d3js.org/topojson.v1.min.js"></script>
-<script src="libs/colorbrewer.js"></script>
+<script src="libs/js/d3.v3.min.js"></script>
+<script src="libs/js/colorbrewer.js"></script>
+<script src="libs/js/jquery-2.0.0.min.js"></script>
+<script src="libs/js/jquery.popover-1.1.2.js"></script>
 
 <div id="container">
   <div id="header">
-    <p id="title">Shenzhen Creative Index</p>
-    <p id="byline">by Erhardt Graeff, Carey Anne Nadeau, Alicia Rouault</p>
+    <p id="title"><a href="/">In the Mix</a></p>
+    <ul id="byline">
+      <li><a href="https://twitter.com/erhardt">Erhardt Graeff</a></li>
+      <li><a href="https://twitter.com/canadeau">Carey Anne Nadeau</a></li>
+      <li><a href="https://twitter.com/arouault">Alicia Rouault</a></li>
+    </ul>
   </div>
   <div id="mapContainer">
-      <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="600" id="map"></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="100%" id="map"></svg>
   </div>
   <div id="infoContainer">
     <div id="infoPane">
-      <h3>Information</h3>
-      <p>Township: <span id="townshipinfo">null</span></p>
+      <div class="words">
+        <h3>Information</h3>
+        <p>Township: <span id="townshipinfo">null</span></p>
+      </div>
+      <div class="chart"></div>
     </div>    
   </div>
 </div>
 
 <script>
+// Set height of map-space according to width of window
+$(document).ready(function() {
+  $("#map").height($(document).height());
+});
 
-/* Set color palette for township choropleth, 
-    offset +1 to remove near-white color (see +1 near fill attr) */
+// Set data sources
+var waterboundaries = "data/waterboundary.json";
+var townships = "data/Index_Township_Obs.json";
+var grids = "data/Index_Grid1000_Obs.json";
+
+/* Set color palette for township choropleth */
 var townColor = d3.scale.ordinal()
-  .domain([0,5])
-  .range(colorbrewer.Greens[6]);
+  .domain(d3.range(5))
+  .range(colorbrewer.Greens[5]);
 
-/* Set color palette for grid choropleth, 
-    offset +1 to remove near-white color (see +1 near fill attr) */
+/* Set color palette for grid choropleth */
 var gridColor = d3.scale.ordinal()
-  .domain([0,5])
-  .range(colorbrewer.Oranges[6]);
+  .domain(d3.range(5))
+  .range(colorbrewer.RdBu[5]);
 
 // Quantize town and grid square indices into quartiles
-var townQuantize = d3.scale.quantize()
-    .domain([0, 9])
-    .range(d3.range(4));
+var townQuantile = d3.scale.quantile()
+    .domain([-0.8617,2.0030])
+    .range(d3.range(5));
 
-var gridQuantize = d3.scale.quantize()
-    .domain([418, 4664])
-    .range(d3.range(4));
+var gridQuantile = d3.scale.quantile()
+    .domain([-1.0000,5.6667])
+    .range(d3.range(5));
 
 // Set main map svg element 
 var map = d3.select("svg");
 
 // Set dimensions of the map based on map element dimensions
-var width = getWidth();
-var height = map.attr("height");
+var width = $("#map").width();
+var height = $("#map").height();
 var centered;
 
 // Set projection of map to Mercator and center over Shenzhen
@@ -170,7 +222,7 @@ var gt = map.append("g").attr("id","townships");
 var gg = map.append("g").attr("id","grids");
 
 // Add waterboundary polygon
-d3.json("data/waterboundary.json", function(error, wb) {
+d3.json(waterboundaries, function(error, wb) {
   gw.selectAll(".waterboundary")
     .data(wb.features)
     .enter().append("path")
@@ -181,27 +233,27 @@ d3.json("data/waterboundary.json", function(error, wb) {
 });
 
 // Add township polygons
-d3.json("data/townships.json", function(error, sz) {
+d3.json(townships, function(error, sz) {
 	gt.selectAll(".township")
-  	.data(sz.features)
+  	  .data(sz.features)
     .enter().append("path")
     	.attr("class", function(d) { return "township " + "t" + sz.features.indexOf(d); })
     	.attr("d", path)
       // colors for categories
-      .attr("fill", function(d) { return townColor(townQuantize(d.properties.Input_FID)+1); })
+      .attr("fill", function(d) { return townColor(townQuantile(d.properties.Index_to_6)); })
       // mouseover changes township fill and shows label
     	.on("mouseover", function(d) {
-        d3.select(this).attr("fill", "orange");
+        d3.select(this).style("opacity", "0.75");
     		d3.selectAll(".township-label.t" + sz.features.indexOf(d)).style("visibility","visible");
     	})
     	.on("mouseout", function(d) {
-        d3.selectAll(".township").attr("fill", function (d) { return townColor(townQuantize(d.properties.Input_FID)+1); });
+        d3.selectAll(".township").style("opacity","1");
         d3.selectAll(".township-label").style("visibility","hidden");
-        d3.selectAll(".township.active").attr("fill","orange"); // keeps active township orange
+        d3.selectAll(".township.active").style("opacity","0.75"); // keeps active township orange
     	})
       .on("click", clicked);
 
-  // Add township labels
+  /* Add township labels
 	gt.selectAll(".township-label")
 	    .data(sz.features)
 	  .enter().append("text")
@@ -211,22 +263,32 @@ d3.json("data/townships.json", function(error, sz) {
       // preserves highlighting of township even when over top of label
 	    .on("mousemove", function(d) {
     		d3.selectAll(".township-label.t" + sz.features.indexOf(d)).style("visibility","visible");
-    		d3.selectAll(".township.t" + sz.features.indexOf(d)).attr("fill", "orange");
+    		d3.selectAll(".township.t" + sz.features.indexOf(d)).style("opacity", "0.75");
     	})
 	    .text(function(d) { return d.properties.ENAME; })
-      .on("click", clicked);
+      .on("click", clicked); */
 });
 
 // Add grid square polygons
-d3.json("data/luohu.json", function(error, gs) {
+d3.json(grids, function(error, gs) {
   gg.selectAll(".gridsquare")
-    .data(gs.features)
+      .data(gs.features)
     .enter().append("path")
       .attr("class","gridsquare")
       .attr("d", path)
-      .attr("fill", function(d) { return gridColor(gridQuantize(d.properties.PageNumber)+1); })
+      .attr("fill", function(d) { return gridColor(gridQuantile(d.properties.index_town)); })
       .on("click", clicked);
+
+  addPopovers();
 });
+
+// Create horizontal bar chart in information pane
+d3.select(".chart")
+  .selectAll("div")
+    .data([20,55,30,75])
+  .enter().append("div")
+    .style("width", function(d) { return d * 10 + "px"; })
+    .text(function(d) { return d; });
 
 /* Click and zoom to townships 
     (based on http://bl.ocks.org/mbostock/2206590) */
@@ -300,9 +362,29 @@ function hideInfo(d) {
   return;
 }
 
-// Determines page width
-function getWidth() {
-  return parseInt(window.innerWidth);
+// Adds popovers for displaying detailed information of townships
+function addPopovers() {
+
+  // Loop through all townships and add popovers to them
+  d3.json(townships, function(error, sz) {
+
+    d = sz.features;
+
+    for(var i = 0; i < d.length; i++) {
+      console.log(d[i].properties.ENAME);
+      if ($('.township.t'+i).popover('getData') != null) {
+        $('.township.t'+i).popover('destroy');   // delete existing popovers
+      } else {
+        $('.township.t'+i).popover({
+          'title': d[i].properties.ENAME,
+          'content': "blah blah blah",
+          'position': 'left',
+          'trigger': 'hover',
+          'animation': false
+        });
+      }
+    }
+  });
 }
 
 </script>
