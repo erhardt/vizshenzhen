@@ -185,10 +185,12 @@ a {
 </div>
 
 <script>
+
 // Set height of map-space according to width of window
-$(document).ready(function() {
-  $("#map").height($(document).height());
-});
+function setHeight() {
+  $("#map").height($(window).height());
+  return $("#map").height();
+}
 
 // Set data sources
 var waterboundaries = "data/waterboundary.json";
@@ -203,7 +205,7 @@ var townColor = d3.scale.ordinal()
 /* Set color palette for grid choropleth */
 var gridColor = d3.scale.ordinal()
   .domain(d3.range(5))
-  .range(colorbrewer.RdBu[5]);
+  .range(colorbrewer.Blues[5]);
 
 // Quantize town and grid square indices into quartiles
 var townQuantile = d3.scale.quantile()
@@ -217,9 +219,14 @@ var gridQuantile = d3.scale.quantile()
 // Set main map svg element 
 var map = d3.select("svg");
 
-// Set dimensions of the map based on map element dimensions
+// Initialize dimensions of the map based on map element dimensions
 var width = $("#map").width();
 var height = $("#map").height();
+var centered;
+
+// Set dimensions of the map based on map element dimensions
+var width = $("#map").width();
+var height = setHeight(); // sets height of map based on window height and then stores to deal with Firefox var set / function call ordering
 var centered;
 
 // Set projection of map to Mercator and center over Shenzhen
@@ -407,6 +414,7 @@ function addTownPopovers() {
 
         var x = d3.scale.ordinal()
             .domain(d3.range(dataset.length))
+            /*.range(["Food","College","Industry"])*/
             .rangeRoundBands([0, w], .2);
 
         var yAxis = d3.svg.axis()
@@ -483,6 +491,7 @@ function addGridPopovers() {
 
         var x = d3.scale.ordinal()
             .domain(d3.range(dataset.length))
+           /* .range(["Food","College","Industry"])*/
             .rangeRoundBands([0, w], .2);
 
         var yAxis = d3.svg.axis()
