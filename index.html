@@ -138,6 +138,22 @@ a {
   padding: 0;
 }
 
+.township.bar.positive {
+  fill: green;
+}
+
+.township.bar.negative {
+  fill: red;
+}
+
+.grid.bar.positive {
+  fill: steelblue;
+}
+
+.grid.bar.negative {
+  fill: red;
+}
+
 </style>
 <body>
 <script src="libs/js/d3.v3.min.js"></script>
@@ -157,7 +173,7 @@ a {
   <div id="mapContainer">
       <svg xmlns="http://www.w3.org/2000/svg" width="100%" id="map"></svg>
   </div>
-  <div id="infoContainer">
+  <!--<div id="infoContainer">
     <div id="infoPane">
       <div class="words">
         <h3>Information</h3>
@@ -165,7 +181,7 @@ a {
       </div>
       <div class="chart"></div>
     </div>    
-  </div>
+  </div>-->
 </div>
 
 <script>
@@ -274,21 +290,13 @@ d3.json(grids, function(error, gs) {
   gg.selectAll(".gridsquare")
       .data(gs.features)
     .enter().append("path")
-      .attr("class","gridsquare")
+      .attr("class", function(d) { return "gridsquare g"+gs.features.indexOf(d); })
       .attr("d", path)
       .attr("fill", function(d) { return gridColor(gridQuantile(d.properties.index_town)); })
       .on("click", clicked);
 
-  addPopovers();
+  addTownPopovers();
 });
-
-// Create horizontal bar chart in information pane
-d3.select(".chart")
-  .selectAll("div")
-    .data([20,55,30,75])
-  .enter().append("div")
-    .style("width", function(d) { return d * 10 + "px"; })
-    .text(function(d) { return d; });
 
 /* Click and zoom to townships 
     (based on http://bl.ocks.org/mbostock/2206590) */
@@ -341,9 +349,9 @@ function clicked(d) {
 
 // Show information pane below map
 function showInfo(d) {
-  ip = document.getElementById('infoPane');
+/*  ip = document.getElementById('infoPane');
   ip.style.visibility = "visible";
-  document.getElementById('townshipinfo').innerHTML = d.properties.ENAME;
+  document.getElementById('townshipinfo').innerHTML = d.properties.ENAME;*/
 
   // Make grid squares visible
   gg.selectAll("path").style("visibility","visible");
@@ -353,8 +361,8 @@ function showInfo(d) {
 
 // Hide information pane below map
 function hideInfo(d) {
-  ip = document.getElementById('infoPane');
-  ip.style.visibility = "hidden";
+/*  ip = document.getElementById('infoPane');
+  ip.style.visibility = "hidden";*/
 
   // Make grid squares invisible
   gg.selectAll("path").style("visibility","hidden");
@@ -363,25 +371,150 @@ function hideInfo(d) {
 }
 
 // Adds popovers for displaying detailed information of townships
-function addPopovers() {
+function addTownPopovers() {
 
   // Loop through all townships and add popovers to them
   d3.json(townships, function(error, sz) {
 
-    d = sz.features;
+    var dd = sz.features;
 
-    for(var i = 0; i < d.length; i++) {
-      console.log(d[i].properties.ENAME);
-      if ($('.township.t'+i).popover('getData') != null) {
-        $('.township.t'+i).popover('destroy');   // delete existing popovers
-      } else {
-        $('.township.t'+i).popover({
-          'title': d[i].properties.ENAME,
-          'content': "blah blah blah",
+    for(var j = 0; j < dd.length; j++) {
+      if ($('.township.t'+j).popover('getData') != null) {
+        $('.township.t'+j).popover('destroy');   // delete existing popovers
+      } else { 
+        $('.township.t'+j).popover({
+          'title': dd[j].properties.ENAME,
+          'html': true,
+          'classes': '.t'+j,
+          'content': '<svg class="t'+j+'"></svg>',
           'position': 'left',
           'trigger': 'hover',
           'animation': false
         });
+
+        var dataset = [dd[j].properties.Index_to_3, dd[j].properties.Index_to_4, dd[j].properties.Index_to_5];
+
+        var margin = {top: 10, right: 5, bottom: 5, left: 10},
+            w = 180 - margin.left - margin.right,
+            h = 180 - margin.top - margin.bottom;
+
+        var y0 = Math.max(Math.abs(d3.min(dataset)), Math.abs(d3.max(dataset)));
+
+        var y = d3.scale.linear()
+            .domain([-y0, y0])
+            .range([h,0])
+            .nice();
+
+        var x = d3.scale.ordinal()
+            .domain(d3.range(dataset.length))
+            .rangeRoundBands([0, w], .2);
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left");
+
+        var svg = d3.select("svg.t"+j)
+            .attr("width", w + margin.left + margin.right)
+            .attr("height", h + margin.top + margin.bottom)
+          .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        svg.selectAll(".bar")
+            .data(dataset)
+          .enter().append("rect")
+            .attr("class", function(d) { return d < 0 ? "township bar negative" : "township bar positive"; })
+            .attr("y", function(d) { return y(Math.max(0, d)); })
+            .attr("x", function(d, i) { return x(i); })
+            .attr("height", function(d) { return Math.abs(y(d) - y(0)); })
+            .attr("width", x.rangeBand());
+
+        svg.append("g")
+            .attr("class", "x axis")
+            .call(yAxis);
+
+        svg.append("g")
+            .attr("class", "y axis")
+          .append("line")
+            .attr("y1", y(0))
+            .attr("y2", y(0))
+            .attr("x1", 0)
+            .attr("x2", w);
+      }
+    }
+  });
+
+  addGridPopovers();
+}
+
+// Adds popovers for displaying detailed information of gridsquares
+function addGridPopovers() {
+
+  // Loop through all townships and add popovers to them
+  d3.json(grids, function(error, gs) {
+
+    var dd = gs.features;
+
+    for(var j = 0; j < dd.length; j++) {
+      if ($('.gridsquare.g'+j).popover('getData') != null) {
+        $('.gridsquare.g'+j).popover('destroy');   // delete existing popovers
+      } else { 
+        $('.gridsquare.g'+j).popover({
+          'title': dd[j].properties.ename + ": " + dd[j].properties.PageName,
+          'html': true,
+          'classes': '.g'+j,
+          'content': '<svg class="g'+j+'"></svg>',
+          'position': 'left',
+          'trigger': 'hover',
+          'animation': false
+        });
+
+        var dataset = [dd[j].properties.index_food, dd[j].properties.index_coll, dd[j].properties.index_ind];
+
+        var margin = {top: 10, right: 5, bottom: 5, left: 10},
+            w = 180 - margin.left - margin.right,
+            h = 180 - margin.top - margin.bottom;
+
+        var y0 = Math.max(Math.abs(d3.min(dataset)), Math.abs(d3.max(dataset)));
+
+        var y = d3.scale.linear()
+            .domain([-y0, y0])
+            .range([h,0])
+            .nice();
+
+        var x = d3.scale.ordinal()
+            .domain(d3.range(dataset.length))
+            .rangeRoundBands([0, w], .2);
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left");
+
+        var svg = d3.select("svg.g"+j)
+            .attr("width", w + margin.left + margin.right)
+            .attr("height", h + margin.top + margin.bottom)
+          .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        svg.selectAll(".bar")
+            .data(dataset)
+          .enter().append("rect")
+            .attr("class", function(d) { return d < 0 ? "grid bar negative" : "grid bar positive"; })
+            .attr("y", function(d) { return y(Math.max(0, d)); })
+            .attr("x", function(d, i) { return x(i); })
+            .attr("height", function(d) { return Math.abs(y(d) - y(0)); })
+            .attr("width", x.rangeBand());
+
+        svg.append("g")
+            .attr("class", "x axis")
+            .call(yAxis);
+
+        svg.append("g")
+            .attr("class", "y axis")
+          .append("line")
+            .attr("y1", y(0))
+            .attr("y2", y(0))
+            .attr("x1", 0)
+            .attr("x2", w);
       }
     }
   });
