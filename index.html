@@ -154,6 +154,45 @@ a {
   fill: red;
 }
 
+#legend {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  margin: 0;
+  border: 0;
+  padding: 10px 20px 10px 25px;
+  color: #fff;
+  background-color: #000;
+}
+
+#legendTitle {
+  margin: 0 0 5px 0;
+  border: 0;
+  padding: 0;
+}
+
+#labels {
+  margin: 5px 0 0 0;
+  border: 0;
+  padding: 0;
+}
+
+#labelLeft {
+  padding: 0;
+  border: 0;
+  margin: 0;
+  text-align: left;
+  float: left;
+}
+
+#labelRight {
+  padding: 0;
+  border: 0;
+  margin: 0;
+  text-align: right;
+  float: right;
+}
+
 </style>
 <body>
 <script src="libs/js/d3.v3.min.js"></script>
@@ -163,7 +202,7 @@ a {
 
 <div id="container">
   <div id="header">
-    <p id="title"><a href="/">In the Mix</a></p>
+    <p id="title"><a href="/">IN THE MIX</a></p>
     <ul id="byline">
       <li><a href="https://twitter.com/erhardt">Erhardt Graeff</a></li>
       <li><a href="https://twitter.com/canadeau">Carey Anne Nadeau</a></li>
@@ -172,6 +211,14 @@ a {
   </div>
   <div id="mapContainer">
       <svg xmlns="http://www.w3.org/2000/svg" width="100%" id="map"></svg>
+  </div>
+  <div id="legend">
+    <p id="legendTitle">INNOVATION POTENTIAL BY TOWNSHIP</p>
+   <svg xmlns="http://www.w3.org/2000/svg" id="legendSwatches"></svg>
+    <div id="labels">
+      <p id="labelLeft">low</p>
+      <p id="labelRight">high</p>
+    </div>
   </div>
 </div>
 
@@ -190,11 +237,6 @@ var grids = "data/Index_Grid1000.json";
 
 // Set main map svg element 
 var map = d3.select("svg");
-
-// Initialize dimensions of the map based on map element dimensions
-var width = $("#map").width();
-var height = $("#map").height();
-var centered;
 
 // Set dimensions of the map based on map element dimensions
 var width = $("#map").width();
@@ -227,20 +269,30 @@ d3.json(waterboundaries, function(error, wb) {
       .on("click", clicked);
 });
 
+// Set color palette for township choropleth
+var townColor = d3.scale.ordinal()
+  .domain(d3.range(4))
+  .range(colorbrewer.Reds[4]);
+
+// Quantize town indices into quintiles
+var townQuantile = d3.scale.quantile()
+    .domain([-0.338590,0.534757]) // Min/Max Grabbed by hand, sorting in QGIS
+    .range(d3.range(4));
+
+// Set color palette for grid choropleth
+var gridColor = d3.scale.ordinal()
+  .domain(d3.range(5))
+  .range(colorbrewer.Reds[5]);
+
+// Quantize grid square indices into quintiles
+var gridQuantile = d3.scale.quantile()
+    .domain([-0.252467,3.463016]) // Min/Max Grabbed by hand, sorting in QGIS
+    .range(d3.range(5));
+
 // Add township polygons
 d3.json(townships, function(error, sz) {
 	
   var dataset = sz.features;
-
-  // Set color palette for township choropleth
-  var townColor = d3.scale.ordinal()
-    .domain(d3.range(5))
-    .range(colorbrewer.Reds[5]);
-
-  // Quantize town indices into quintiles
-  var townQuantile = d3.scale.quantile()
-      .domain([-0.338590,0.534757]) // Min/Max Grabbed by hand, sorting in QGIS
-      .range(d3.range(5));
 
   gt.selectAll(".township")
   	  .data(dataset)
@@ -268,16 +320,6 @@ d3.json(townships, function(error, sz) {
 d3.json(grids, function(error, gs) {
 
   var dataset = gs.features;
-
-  // Set color palette for grid choropleth
-  var gridColor = d3.scale.ordinal()
-    .domain(d3.range(5))
-    .range(colorbrewer.Reds[5]);
-
-  // Quantize grid square indices into quintiles
-  var gridQuantile = d3.scale.quantile()
-      .domain([-0.252467,3.463016]) // Min/Max Grabbed by hand, sorting in QGIS
-      .range(d3.range(5));
 
   gg.selectAll(".gridsquare")
       .data(dataset)
@@ -373,8 +415,8 @@ function addPopover(el,d) {
     $(el).popover({
       'title': d.properties.ENAME,
       'html': true,
-      'classes': d.properties.PageNumber,
-      'content': '<svg class="'+d.properties.PageNumber+'"></svg>',
+      'classes': d.properties.GBTOWN,
+      'content': '<svg class="t'+d.properties.GBTOWN+'"></svg>',
       'position': 'left',
       'trigger': 'hover',
       'animation': false 
@@ -402,7 +444,7 @@ function addPopover(el,d) {
         .scale(y)
         .orient("left");
 
-    var svg = d3.select("svg."+d.properties.PageNumber)
+    var svg = d3.select("svg.t"+d.properties.GBTOWN)
         .attr("width", w + margin.left + margin.right)
         .attr("height", h + margin.top + margin.bottom)
       .append("g")
@@ -582,5 +624,24 @@ function addGridPopovers() {
     }
   });
 }
+
+//Add legend for choropleths
+var legend = d3.select("svg#legendSwatches")
+    .attr("width",$("#legendTitle").width())
+    .attr("height", 10)
+  .append("g")
+    .attr("class", "legend");
+
+var x = d3.scale.linear()
+    .domain([0, 3])
+    .range([0, $("#legendTitle").width()/4*3]);
+
+legend.selectAll("rect")
+    .data([0,1,2,3])
+  .enter().append("rect")
+    .attr("height", $("svg#legendSwatches").height())
+    .attr("x", function(d) { return x(d); })
+    .attr("width", $("#legendTitle").width()/4)
+    .style("fill", function(d) { return townColor(d); });
 
 </script>
