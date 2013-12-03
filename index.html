@@ -66,6 +66,26 @@ a {
   padding: 0;
 }
 
+#mapToggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+  border: 0;
+  padding: 10px 20px 10px 25px;
+  color: #fff;
+  background-color: #000;
+  font-weight: bold;
+}
+
+#townshipTog, #gridTog {
+  cursor: pointer;
+}
+
+#townshipTog.active, #gridTog.active {
+  color: red;
+}
+
 #mapContainer {
   margin: 0;
   border: 0;
@@ -137,7 +157,7 @@ a {
 
 /* Classes */
 .gridsquare {
-  stroke-width: 0.5px;
+  stroke-width: 0px;
   stroke: #000;
   visibility: hidden;
   cursor: pointer;
@@ -146,7 +166,7 @@ a {
 .township {
   stroke: #000;
   stroke-opacity: 1;
-  stroke-width: 0.5px;
+  stroke-width: 0px;
   cursor: pointer;
 }
 
@@ -181,6 +201,9 @@ a {
       <li><a href="https://twitter.com/canadeau">Carey Anne Nadeau</a></li>
       <li><a href="https://twitter.com/arouault">Alicia Rouault</a></li>
     </ul>
+  </div>
+  <div id="mapToggle">
+    <p id="toggleButtons"><span id="townshipTog" class="active" onClick="hideGrids()">TOWNSHIPS</span>&nbsp;::&nbsp;<span id="gridTog" onClick="showGrids();">GRID VIEW</span>
   </div>
   <div id="mapContainer">
       <svg xmlns="http://www.w3.org/2000/svg" width="100%" id="map"></svg>
@@ -460,6 +483,16 @@ function setHeight() {
 // Show Grid Squares
 function showGrids(d) {
 
+  // Switch active class between toggle links
+  $("#townshipTog").removeClass("active");
+  $("#gridTog").addClass("active");
+
+  // Change color of Townships to Greys
+  townColor.range(colorbrewer.Greys[4]);
+
+  gt.selectAll("path").transition()
+    .attr("fill", function(d) { return townColor(townQuantile(d.properties.index_town)); })
+
   // Make grid squares visible
   gg.selectAll("path").style("visibility","visible");
 
@@ -469,9 +502,19 @@ function showGrids(d) {
 // Hide Grid Squares
 function hideGrids(d) {
 
+  // Switch active class between toggle links
+  $("#gridTog").removeClass("active");
+  $("#townshipTog").addClass("active");
+
+  // Change color of Townships back to reds
+  townColor.range(colorbrewer.Reds[4]);
+
+  gt.selectAll("path").transition()
+    .attr("fill", function(d) { return townColor(townQuantile(d.properties.index_town)); })
+
   // Make grid squares invisible
   gg.selectAll("path").style("visibility","hidden");
-
+  
   return;
 }
 
