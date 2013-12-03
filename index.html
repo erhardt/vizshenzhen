@@ -83,7 +83,7 @@ a {
 }
 
 #townshipTog.active, #gridTog.active {
-  color: red;
+  color: #ff0000;
 }
 
 #mapContainer {
@@ -224,7 +224,7 @@ a {
 // Set data sources
 var waterboundaries = "data/waterboundary.json";
 var townships = "data/Index_Township.json";
-var grids = "data/Index_Grid1000.json";
+var grids = "data/Index_Grid.json";
 
 // Set main map svg element 
 var map = d3.select("svg");
@@ -261,13 +261,13 @@ var townQuantile = d3.scale.quantile()
 
 // Set color palette for grid choropleth
 var gridColor = d3.scale.ordinal()
-  .domain(d3.range(4))
-  .range(colorbrewer.Reds[4]);
+  .domain(d3.range(5))
+  .range(colorbrewer.Reds[5]);
 
 // Quantize grid square indices into quintiles
 var gridQuantile = d3.scale.quantile()
     .domain([-0.252467,3.463016]) // Min/Max Grabbed by hand, sorting in QGIS
-    .range(d3.range(4));
+    .range(d3.range(5));
 
 
 /*** Render Geography ***/
@@ -308,7 +308,7 @@ d3.json(grids, function(error, gs) {
     .enter().append("path")
       .attr("class", function(d) { return "gridsquare g"+d.properties.PageNumber; })
       .attr("d", path)
-      .attr("fill", function(d) { return gridColor(gridQuantile(d.properties.index_grid)); })
+      .attr("fill", function(d) { return gridColor(gridQuantile(d.properties.Index_g_14)); })
       // mouseover changes gridsquare fill and shows popover
       .on("mouseover", function(d) { 
         d3.select(this).style("opacity","0.85");
@@ -365,7 +365,7 @@ function addPopover(el,d) {
 
   // Create popover
   if ($(el).popover('getData') != null) {
-    $(el).popover('destroy');   // delete existing popovers
+    /*$(el).popover('destroy');   // delete existing popovers*/
   } else { 
     $(el).popover({
       'title': name,
@@ -490,7 +490,7 @@ function showGrids(d) {
   // Change color of Townships to Greys
   townColor.range(colorbrewer.Greys[4]);
 
-  gt.selectAll("path").transition()
+  gt.selectAll("path").transition().delay(0)
     .attr("fill", function(d) { return townColor(townQuantile(d.properties.index_town)); })
 
   // Make grid squares visible
@@ -509,7 +509,7 @@ function hideGrids(d) {
   // Change color of Townships back to reds
   townColor.range(colorbrewer.Reds[4]);
 
-  gt.selectAll("path").transition()
+  gt.selectAll("path").transition().delay(0)
     .attr("fill", function(d) { return townColor(townQuantile(d.properties.index_town)); })
 
   // Make grid squares invisible

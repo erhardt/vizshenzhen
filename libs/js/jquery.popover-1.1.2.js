@@ -10,15 +10,15 @@
 ;(function($) {
 	//define some default plugin options
 	var defaults = {
-		verticalOffset: 10, //offset the popover by y px vertically (movement depends on position of popover. If position == 'bottom', positive numbers are down)
-		horizontalOffset: 10, //offset the popover by x px horizontally (movement depends on position of popover. If position == 'right', positive numbers are right)
+		verticalOffset: 10, // (default: 10) offset the popover by y px vertically (movement depends on position of popover. If position == 'bottom', positive numbers are down)
+		horizontalOffset: 10, // (default: 10) offset the popover by x px horizontally (movement depends on position of popover. If position == 'right', positive numbers are right)
 		title: false, //heading, false for none
 		content: false, //content of the popover
 		url: false, //set to an url to load content via ajax
 		classes: '', //classes to give the popover, i.e. normal, wider or large
 		position: 'auto', //where should the popover be placed? Auto, top, right, bottom, left or absolute (i.e. { top: 4 }, { left: 4 })
-		fadeSpeed: 160, //how fast to fade out popovers when destroying or hiding
-		trigger: 'click', //how to trigger the popover: click, hover or manual
+		fadeSpeed: 100, // (default: 160) how fast to fade out popovers when destroying or hiding
+		trigger: 'hover', //how to trigger the popover: click, hover or manual
 		preventDefault: true, //preventDefault actions on the element on which the popover is called
 		stopChildrenPropagation: true, //prevent propagation on popover children
 		hideOnHTMLClick: true, //hides the popover when clicked outside of it
@@ -44,8 +44,10 @@
 				y1 = coordinates.top + $anchor.outerHeight() / 2 - el.outerHeight() / 2;
 				x1 = coordinates.left	+ $anchor.outerWidth();
 			} else if (position == 'left') {
-				y1 = coordinates.top + $anchor.outerHeight() / 2 - el.outerHeight() / 2;
-				x1 = coordinates.left	- el.outerWidth();
+				/*y1 = coordinates.top + $anchor.outerHeight() / 2 - el.outerHeight() / 2;
+				x1 = coordinates.left	- el.outerWidth();*/
+				y1 = coordinates.top + $anchor.get(0).getBoundingClientRect().height / 2 - el.outerHeight() / 2;
+				x1 = coordinates.left - el.outerWidth();
 			} else {
 				//bottom
 				y1 = coordinates.top + $anchor.outerHeight();

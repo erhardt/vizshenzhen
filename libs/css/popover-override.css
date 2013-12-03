@@ -3,9 +3,10 @@
   z-index: 1010;
   padding: 1px;
   max-height: 300px;
-  background-color: #ffffff;
-  border: 1px solid #ccc;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  background-color: #000;
+  opacity: 0.85;
+  color: #fff;
+  border: 1px solid #808080;
   -webkit-border-radius: 6px;
      -moz-border-radius: 6px;
           border-radius: 6px;
@@ -37,14 +38,14 @@
   bottom: -10px;
   left: 50%;
   margin-left: -10px;
-  border-top-color: #ffffff;
+  border-top-color: #000;
   border-width: 10px 10px 0;
 }
 
 .popover .bottom-arrow:after {
   bottom: -1px;
   left: -11px;
-  border-top-color: rgba(0, 0, 0, 0.25);
+  border-top-color: #808080;
   border-width: 11px 11px 0;
 }
 
@@ -52,14 +53,14 @@
   top: 50%;
   left: -10px;
   margin-top: -10px;
-  border-right-color: #ffffff;
+  border-right-color: #000;
   border-width: 10px 10px 10px 0;
 }
 
 .popover .left-arrow:after {
   bottom: -11px;
   left: -1px;
-  border-right-color: rgba(0, 0, 0, 0.25);
+  border-right-color: #808080;
   border-width: 11px 11px 11px 0;
 }
 
@@ -67,14 +68,14 @@
   top: -10px;
   left: 50%;
   margin-left: -10px;
-  border-bottom-color: #ffffff;
+  border-bottom-color: #000;
   border-width: 0 10px 10px;
 }
 
 .popover .top-arrow:after {
   top: -1px;
   left: -11px;
-  border-bottom-color: rgba(0, 0, 0, 0.25);
+  border-bottom-color: #808080;
   border-width: 0 11px 11px;
 }
 
@@ -82,14 +83,14 @@
   top: 50%;
   right: -10px;
   margin-top: -10px;
-  border-left-color: #ffffff;
+  border-left-color: #000;
   border-width: 10px 0 10px 10px;
 }
 
 .popover .right-arrow:after {
   right: -1px;
   bottom: -11px;
-  border-left-color: rgba(0, 0, 0, 0.25);
+  border-left-color: #808080;
   border-width: 11px 0 11px 11px;
 }
 
@@ -107,20 +108,21 @@
 .popover .title {
   padding: 8px 14px;
   margin: 0;
-  color: #333333;
+  color: #fff;
+  opacity: 1.0;
   font-size: 14px;
   font-weight: normal;
   line-height: 18px;
   height: inherit;
-  background-color: #f7f7f7;
-  border-bottom: 1px solid #ebebeb;
+  background-color: #000;
+  border-bottom: 1px solid #808080;
   -webkit-border-radius: 5px 5px 0 0;
      -moz-border-radius: 5px 5px 0 0;
           border-radius: 5px 5px 0 0;
 }
 
 .popover .wrap {
-  background: white;
+  background: #000;
   border: 0;
   border-radius: 0;
   -moz-border-radius: 0;
