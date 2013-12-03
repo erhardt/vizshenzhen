@@ -138,19 +138,11 @@ a {
   padding: 0;
 }
 
-.township.bar.positive {
+.bar.positive {
   fill: green;
 }
 
-.township.bar.negative {
-  fill: red;
-}
-
-.grid.bar.positive {
-  fill: steelblue;
-}
-
-.grid.bar.negative {
+.bar.negative {
   fill: red;
 }
 
@@ -301,17 +293,13 @@ d3.json(townships, function(error, sz) {
     	.attr("d", path)
       // colors for categories
       .attr("fill", function(d) { return townColor(townQuantile(d.properties.index_town)); })
-      // mouseover changes township fill and shows label
-    	.on("mouseover", function(d) { addPopover(this,d); }
-
-        /*function(d) {
-        d3.select(this).style("opacity", "0.75");
-    		d3.selectAll(".township-label.t" + sz.features.indexOf(d)).style("visibility","visible");
-        d3.select(this).call(addPopover(this,d));
-    	}*/)
+      // mouseover changes township fill and shows popover
+    	.on("mouseover", function(d) { 
+        d3.select(this).style("opacity","0.75");
+        addPopover(this,d); })
     	.on("mouseout", function(d) {
         d3.selectAll(".township").style("opacity","1");
-        d3.selectAll(".township.active").style("opacity","0.75"); // keeps active township orange
+        d3.selectAll(".township.active").style("opacity","0.75"); // keeps active township
     	})
       .on("click", clicked);
 });
@@ -327,10 +315,99 @@ d3.json(grids, function(error, gs) {
       .attr("class", function(d) { return "gridsquare g"+d.properties.PageNumber; })
       .attr("d", path)
       .attr("fill", function(d) { return gridColor(gridQuantile(d.properties.index_grid)); })
+      // mouseover changes gridsquare fill and shows popover
+      .on("mouseover", function(d) { 
+        d3.select(this).style("opacity","0.75");
+        addPopover(this,d); })
+      .on("mouseout", function(d) {
+        d3.selectAll(".gridsquare").style("opacity","1");
+        d3.selectAll(".gridsquare.active").style("opacity","0.75"); // keeps active township
+      })
       .on("click", clicked);
-
-  /*addTownPopovers();*/
 });
+
+// Adds popovers for displaying detailed information of townships
+function addPopover(el,d) {
+
+  // Make active polygon opaque
+  d3.select(el).style("opacity", "0.75");
+
+  // Check if it's a township or gridsquare and set appropriate variables
+  var id = "";
+  var name = "";
+
+  if (d3.select(el).classed("township")) {
+    id = "t" + d.properties.GBTOWN;
+    name = d.properties.ENAME;
+  } else {
+    id = "g" + d.properties.PageNumber;
+    name = "Grid #" + d.properties.PageNumber;
+  }
+
+  // Create popover
+  if ($(el).popover('getData') != null) {
+    $(el).popover('destroy');   // delete existing popovers
+  } else { 
+    $(el).popover({
+      'title': name,
+      'html': true,
+      'classes': id,
+      'content': '<svg class="'+id+'"></svg>',
+      'position': 'left',
+      'trigger': 'hover',
+      'animation': false 
+    });
+
+    var dataset = [d.properties.index_emp,d.properties.index_food, d.properties.index_coll, d.properties.index_ind];
+
+    var margin = {top: 10, right: 5, bottom: 5, left: 10},
+        w = 180 - margin.left - margin.right,
+        h = 180 - margin.top - margin.bottom;
+
+    var y0 = Math.max(Math.abs(d3.min(dataset)), Math.abs(d3.max(dataset)));
+
+    var y = d3.scale.linear()
+        .domain([-y0, y0])
+        .range([h,0])
+        .nice();
+
+    var x = d3.scale.ordinal()
+        .domain(d3.range(dataset.length))
+        /*.range(["Food","College","Industry"])*/
+        .rangeRoundBands([0, w], .2);
+
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left");
+
+    var svg = d3.select("svg."+id)
+        .attr("width", w + margin.left + margin.right)
+        .attr("height", h + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    svg.selectAll(".bar")
+        .data(dataset)
+      .enter().append("rect")
+        .attr("class", function(d) { return d < 0 ? "bar negative" : "bar positive"; })
+        .attr("y", function(d) { return y(Math.max(0, d)); })
+        .attr("x", function(d, i) { return x(i); })
+        .attr("height", function(d) { return Math.abs(y(d) - y(0)); })
+        .attr("width", x.rangeBand());
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .call(yAxis);
+
+    svg.append("g")
+        .attr("class", "y axis")
+      .append("line")
+        .attr("y1", y(0))
+        .attr("y2", y(0))
+        .attr("x1", 0)
+        .attr("x2", w);
+  }
+}
 
 /* Click and zoom to townships 
     (based on http://bl.ocks.org/mbostock/2206590) */
@@ -402,227 +479,6 @@ function hideInfo(d) {
   gg.selectAll("path").style("visibility","hidden");
 
   return;
-}
-
-// Adds popovers for displaying detailed information of townships
-function addPopover(el,d) {
-
-  d3.select(el).style("opacity", "0.75");
-
-  if ($(el).popover('getData') != null) {
-   /* $(el).popover('destroy');   // delete existing popovers*/
-  } else { 
-    $(el).popover({
-      'title': d.properties.ENAME,
-      'html': true,
-      'classes': d.properties.GBTOWN,
-      'content': '<svg class="t'+d.properties.GBTOWN+'"></svg>',
-      'position': 'left',
-      'trigger': 'hover',
-      'animation': false 
-    });
-
-    var dataset = [d.properties.index_emp,d.properties.index_food, d.properties.index_coll, d.properties.index_ind];
-
-    var margin = {top: 10, right: 5, bottom: 5, left: 10},
-        w = 180 - margin.left - margin.right,
-        h = 180 - margin.top - margin.bottom;
-
-    var y0 = Math.max(Math.abs(d3.min(dataset)), Math.abs(d3.max(dataset)));
-
-    var y = d3.scale.linear()
-        .domain([-y0, y0])
-        .range([h,0])
-        .nice();
-
-    var x = d3.scale.ordinal()
-        .domain(d3.range(dataset.length))
-        /*.range(["Food","College","Industry"])*/
-        .rangeRoundBands([0, w], .2);
-
-    var yAxis = d3.svg.axis()
-        .scale(y)
-        .orient("left");
-
-    var svg = d3.select("svg.t"+d.properties.GBTOWN)
-        .attr("width", w + margin.left + margin.right)
-        .attr("height", h + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    svg.selectAll(".bar")
-        .data(dataset)
-      .enter().append("rect")
-        .attr("class", function(d) { return d < 0 ? "township bar negative" : "township bar positive"; })
-        .attr("y", function(d) { return y(Math.max(0, d)); })
-        .attr("x", function(d, i) { return x(i); })
-        .attr("height", function(d) { return Math.abs(y(d) - y(0)); })
-        .attr("width", x.rangeBand());
-
-    svg.append("g")
-        .attr("class", "x axis")
-        .call(yAxis);
-
-    svg.append("g")
-        .attr("class", "y axis")
-      .append("line")
-        .attr("y1", y(0))
-        .attr("y2", y(0))
-        .attr("x1", 0)
-        .attr("x2", w);
-  }
-}
-
-// Adds popovers for displaying detailed information of townships
-function addTownPopovers() {
-
-  // Loop through all townships and add popovers to them
-  d3.json(townships, function(error, sz) {
-
-    var dd = sz.features;
-
-    for(var j = 0; j < dd.length; j++) {
-      if ($('.township.t'+j).popover('getData') != null) {
-        $('.township.t'+j).popover('destroy');   // delete existing popovers
-      } else { 
-        $('.township.t'+j).popover({
-          'title': dd[j].properties.ENAME,
-          'html': true,
-          'classes': '.t'+j,
-          'content': '<svg class="t'+j+'"></svg>',
-          'position': 'left',
-          'trigger': 'hover',
-          'animation': false
-        });
-
-        var dataset = [dd[j].properties.Index_to_3, dd[j].properties.Index_to_4, dd[j].properties.Index_to_5];
-
-        var margin = {top: 10, right: 5, bottom: 5, left: 10},
-            w = 180 - margin.left - margin.right,
-            h = 180 - margin.top - margin.bottom;
-
-        var y0 = Math.max(Math.abs(d3.min(dataset)), Math.abs(d3.max(dataset)));
-
-        var y = d3.scale.linear()
-            .domain([-y0, y0])
-            .range([h,0])
-            .nice();
-
-        var x = d3.scale.ordinal()
-            .domain(d3.range(dataset.length))
-            /*.range(["Food","College","Industry"])*/
-            .rangeRoundBands([0, w], .2);
-
-        var yAxis = d3.svg.axis()
-            .scale(y)
-            .orient("left");
-
-        var svg = d3.select("svg.t"+j)
-            .attr("width", w + margin.left + margin.right)
-            .attr("height", h + margin.top + margin.bottom)
-          .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-        svg.selectAll(".bar")
-            .data(dataset)
-          .enter().append("rect")
-            .attr("class", function(d) { return d < 0 ? "township bar negative" : "township bar positive"; })
-            .attr("y", function(d) { return y(Math.max(0, d)); })
-            .attr("x", function(d, i) { return x(i); })
-            .attr("height", function(d) { return Math.abs(y(d) - y(0)); })
-            .attr("width", x.rangeBand());
-
-        svg.append("g")
-            .attr("class", "x axis")
-            .call(yAxis);
-
-        svg.append("g")
-            .attr("class", "y axis")
-          .append("line")
-            .attr("y1", y(0))
-            .attr("y2", y(0))
-            .attr("x1", 0)
-            .attr("x2", w);
-      }
-    }
-  });
-
-  /*addGridPopovers();*/
-}
-
-// Adds popovers for displaying detailed information of gridsquares
-function addGridPopovers() {
-
-  // Loop through all townships and add popovers to them
-  d3.json(grids, function(error, gs) {
-
-    var dd = gs.features;
-
-    for(var j = 0; j < dd.length; j++) {
-      if ($('.gridsquare.g'+j).popover('getData') != null) {
-        $('.gridsquare.g'+j).popover('destroy');   // delete existing popovers
-      } else { 
-        $('.gridsquare.g'+j).popover({
-          'title': dd[j].properties.ename + ": " + dd[j].properties.PageName,
-          'html': true,
-          'classes': '.g'+j,
-          'content': '<svg class="g'+j+'"></svg>',
-          'position': 'left',
-          'trigger': 'hover',
-          'animation': false
-        });
-
-        var dataset = [dd[j].properties.index_food, dd[j].properties.index_coll, dd[j].properties.index_ind];
-
-        var margin = {top: 10, right: 5, bottom: 5, left: 10},
-            w = 180 - margin.left - margin.right,
-            h = 180 - margin.top - margin.bottom;
-
-        var y0 = Math.max(Math.abs(d3.min(dataset)), Math.abs(d3.max(dataset)));
-
-        var y = d3.scale.linear()
-            .domain([-y0, y0])
-            .range([h,0])
-            .nice();
-
-        var x = d3.scale.ordinal()
-            .domain(d3.range(dataset.length))
-           /* .range(["Food","College","Industry"])*/
-            .rangeRoundBands([0, w], .2);
-
-        var yAxis = d3.svg.axis()
-            .scale(y)
-            .orient("left");
-
-        var svg = d3.select("svg.g"+j)
-            .attr("width", w + margin.left + margin.right)
-            .attr("height", h + margin.top + margin.bottom)
-          .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-        svg.selectAll(".bar")
-            .data(dataset)
-          .enter().append("rect")
-            .attr("class", function(d) { return d < 0 ? "grid bar negative" : "grid bar positive"; })
-            .attr("y", function(d) { return y(Math.max(0, d)); })
-            .attr("x", function(d, i) { return x(i); })
-            .attr("height", function(d) { return Math.abs(y(d) - y(0)); })
-            .attr("width", x.rangeBand());
-
-        svg.append("g")
-            .attr("class", "x axis")
-            .call(yAxis);
-
-        svg.append("g")
-            .attr("class", "y axis")
-          .append("line")
-            .attr("y1", y(0))
-            .attr("y2", y(0))
-            .attr("x1", 0)
-            .attr("x2", w);
-      }
-    }
-  });
 }
 
 //Add legend for choropleths
