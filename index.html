@@ -40,7 +40,7 @@ a {
   background-color: #000;
 }
 
-#title {
+#headerTitle {
   font-size: 45px;
   margin: 0 15px 0 0;
   border: 0;
@@ -138,8 +138,45 @@ a {
   float: right;
 }
 
-#districtinfo {
+#about {
+  position: absolute;
+  top: 50px;
+  left: 200px;
+  margin: 0;
+  border: 0;
+  padding: 10px 20px 5px;
   color: #fff;
+  background-color: rgba(0,0,0,0.85);
+  font-size: 20px;
+}
+
+#about p {
+  margin: 15px 0;
+  border: 0;
+  padding: 0;
+}
+
+#aboutTitle {
+  display: inline;
+  float: left;
+}
+
+#aboutClose {
+  display: inline;
+  float: right;
+}
+
+#closer {
+  cursor: pointer;
+}
+
+#closer:hover {
+  color: #ff0000;
+}
+
+#aboutDescription {
+  display: block;
+  clear: left;
 }
 
 .background {
@@ -195,7 +232,7 @@ a {
 
 <div id="container">
   <div id="header">
-    <p id="title"><a href="/">IN THE MIX</a></p>
+    <p id="headerTitle"><a href="/">IN THE MIX</a></p>
     <ul id="byline">
       <li><a href="https://twitter.com/erhardt">Erhardt Graeff</a></li>
       <li><a href="https://twitter.com/canadeau">Carey Anne Nadeau</a></li>
@@ -209,11 +246,19 @@ a {
       <svg xmlns="http://www.w3.org/2000/svg" width="100%" id="map"></svg>
   </div>
   <div id="legend">
-    <p id="legendTitle">INNOVATION POTENTIAL BY TOWNSHIP</p>
+    <p id="legendTitle">INNOVATION POTENTIAL BY LOCALE</p>
    <svg xmlns="http://www.w3.org/2000/svg" id="legendSwatches"></svg>
     <div id="labels">
       <p id="labelLeft">low</p>
       <p id="labelRight">high</p>
+    </div>
+  </div>
+  <div id="about">
+    <div id="aboutTitle"><p>ABOUT</p></div><div id="aboutClose"><p onClick="closeAbout()" id="closer">X</p></div>
+    <div id="aboutDescription">
+      <p>Understanding that young, hip Weibo users may be a proxy for a Chinese creative class, we aim to characterize areas by their diversity of workers, across many industries, and access to cultural amenities and key infrastructure. We believe more diverse and accessible places are prime for innovation and information spillover. So where are these places? We start by looking at data from the 2000 census for workers employed by industry. This grounds our study in what may be a historical entrenchment of industry location and mix by township. Weibo check-in data from 2013 gives us contemporary proxies for what a young creative class might experience and where through proximity to libraries, public transportation stops, and food and drink venues. We spotlight the northwest district of Bao’an and core district of Luohu to contrast these mixes of industry and lifestyle.</p>
+      <p>In order to combine shares of different indicators, each is standardized using the inter-decile range standardization method. This method compares each value of a variable (X<sub>i</sub>) to the median (X<sub>med</sub>), which is then divided by the distance between the value of that variable at the 90th percentile of the distribution (X<sub>90</sub>) and the 10th percentile (X<sub>10</sub>):  This method was judged more appropriate for these data than Z-score standardization, which compares each value of a variable to the mean and divides their difference by the standard deviation, as the values are not likely to follow a normal distribution. It was also preferred to range standardization (which compares each value of a variable to the minimum and divides their residual by the distance between the minimum and the maximum) because of the sensitivity of this latter method to outliers. Inter-decile range standardization helps to minimize the influence of outliers by using the 90th and the 10th percentile values instead of the minimum and maximum values, and best reflects the non-normal distribution of the different indicators.</p>
+      <p>Standardized Score = &sum;((x<sub>i</sub> -x<sub>med</sub> )/ (x<sub>90</sub> – x<sub>10</sub>))</p>
     </div>
   </div>
 </div>
@@ -465,13 +510,6 @@ function clicked(el, d) {
     .duration(750)
     .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
     .style("stroke-width", 1.5 / k + "px");
-
-/**
-  if (d && centered !== d) {
-    hideGrids(d);
-  } else {
-    showGrids(d);
-  }**/
 }
 
 // Set height of map-space according to height of window
@@ -517,5 +555,17 @@ function hideGrids(d) {
   
   return;
 }
+
+// Close the about popup
+function closeAbout() {
+  $("#about").css("visibility","hidden");
+}
+
+// Style about box according to dimensions of window
+$(document).ready(function() {
+  $("#about").width($(document).width()/100*75);
+  $("#about").css("top",$(document).height()/2-$("#about").height()/2);
+  $("#about").css("left",$(document).width()/2-$("#about").width()/2);
+});
 
 </script>
