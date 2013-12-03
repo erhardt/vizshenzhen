@@ -4,6 +4,7 @@
 <link href="libs/css/popover-override.css" rel="stylesheet">
 <style>
 
+/* Elements */
 body {
   margin: 0;
   border: 0;
@@ -11,7 +12,7 @@ body {
   background-color: #000;
 }
 
-h1, h2, h3, p, ul, text, .popover {
+h1, h2, h3, p, ul, text, div {
   font-family: "Gill Sans","Helvetica Neue","Helvetica","Arial",sans-serif;
   font-weight: lighter;
 }
@@ -21,6 +22,7 @@ a {
   color: inherit;
 }
 
+/* IDs */
 #container {
   margin: 0;
   border: 0;
@@ -77,75 +79,6 @@ a {
     padding: 0;
 }
 
-#infoContainer {
-  color: #fff;
-  margin: 0;
-  border: 0;
-  padding: 10px 0;
-}
-
-#infoPane {
-  visibility: hidden;
-  width: 100%;
-  text-align: center;
-}
-
-#districtinfo {
-  color: #fff;
-}
-
-.background {
-  fill: #000;
-  pointer-events: all;
-}
-
-.gridsquare {
-  stroke-width: 0.5px;
-  stroke: #000;
-}
-
-.township {
-  stroke: #000;
-  stroke-opacity: 1;
-  stroke-width: 0.5px;
-  cursor: pointer;
-}
-
-.township.active {
-  opacity: 0.75;
-}
-
-.township-label {
-  fill: #000;
-  font-size: 15px;
-  font-weight: 300;
-  text-anchor: middle;
-  visibility: hidden;
-}
-
-.gridsquare {
-  visibility: hidden;
-  stroke-width: 0.5px;
-  cursor: pointer;
-}
-
-.chart div {
-  background-color: green;
-  border: 1px white solid;
-  border-left: 0;
-  border-collapse: collapse;
-  margin: 0;
-  padding: 0;
-}
-
-.bar.positive {
-  fill: green;
-}
-
-.bar.negative {
-  fill: red;
-}
-
 #legend {
   position: absolute;
   bottom: 0px;
@@ -185,6 +118,54 @@ a {
   float: right;
 }
 
+#districtinfo {
+  color: #fff;
+}
+
+.background {
+  fill: #000;
+  pointer-events: all;
+}
+
+.bar.positive {
+  fill: green;
+}
+
+.bar.negative {
+  fill: red;
+}
+
+/* Classes */
+.gridsquare {
+  stroke-width: 0.5px;
+  stroke: #000;
+  visibility: hidden;
+  cursor: pointer;
+}
+
+.township {
+  stroke: #000;
+  stroke-opacity: 1;
+  stroke-width: 0.5px;
+  cursor: pointer;
+}
+
+.township.active {
+  opacity: 0.85;
+}
+
+.township-label {
+  fill: #000;
+  font-size: 15px;
+  font-weight: 300;
+  text-anchor: middle;
+  visibility: hidden;
+}
+
+.waterboundary {
+  fill: #808080;
+}
+
 </style>
 <body>
 <script src="libs/js/d3.v3.min.js"></script>
@@ -216,12 +197,7 @@ a {
 
 <script>
 
-// Set height of map-space according to width of window
-function setHeight() {
-  $("#map").height($(window).height());
-  return $("#map").height();
-}
-
+/*** Instantiate Global Variables ***/
 // Set data sources
 var waterboundaries = "data/waterboundary.json";
 var townships = "data/Index_Township.json";
@@ -250,17 +226,6 @@ var gw = map.append("g").attr("id","waterboundaries");
 var gt = map.append("g").attr("id","townships");
 var gg = map.append("g").attr("id","grids");
 
-// Add waterboundary polygon
-d3.json(waterboundaries, function(error, wb) {
-  gw.selectAll(".waterboundary")
-    .data(wb.features)
-    .enter().append("path")
-      .attr("class","waterboundary")
-      .attr("d", path)
-      .attr("fill", "#1C6BA0")
-      .on("click", clicked);
-});
-
 // Set color palette for township choropleth
 var townColor = d3.scale.ordinal()
   .domain(d3.range(4))
@@ -273,21 +238,30 @@ var townQuantile = d3.scale.quantile()
 
 // Set color palette for grid choropleth
 var gridColor = d3.scale.ordinal()
-  .domain(d3.range(5))
-  .range(colorbrewer.Reds[5]);
+  .domain(d3.range(4))
+  .range(colorbrewer.Reds[4]);
 
 // Quantize grid square indices into quintiles
 var gridQuantile = d3.scale.quantile()
     .domain([-0.252467,3.463016]) // Min/Max Grabbed by hand, sorting in QGIS
-    .range(d3.range(5));
+    .range(d3.range(4));
+
+
+/*** Render Geography ***/
+// Add waterboundary polygon
+d3.json(waterboundaries, function(error, wb) {
+  gw.selectAll(".waterboundary")
+    .data(wb.features)
+    .enter().append("path")
+      .attr("class","waterboundary")
+      .attr("d", path)
+      .on("click", function(d) { clicked(this, d); });
+});
 
 // Add township polygons
 d3.json(townships, function(error, sz) {
-	
-  var dataset = sz.features;
-
   gt.selectAll(".township")
-  	  .data(dataset)
+  	  .data(sz.features)
     .enter().append("path")
     	.attr("class", function(d) { return "township " + "t" + d.properties.GBTOWN; })
     	.attr("d", path)
@@ -301,31 +275,53 @@ d3.json(townships, function(error, sz) {
         d3.selectAll(".township").style("opacity","1");
         d3.selectAll(".township.active").style("opacity","0.75"); // keeps active township
     	})
-      .on("click", clicked);
+      .on("click", function(d) { clicked(this, d); });
 });
 
 // Add grid square polygons
 d3.json(grids, function(error, gs) {
-
-  var dataset = gs.features;
-
   gg.selectAll(".gridsquare")
-      .data(dataset)
+      .data(gs.features)
     .enter().append("path")
       .attr("class", function(d) { return "gridsquare g"+d.properties.PageNumber; })
       .attr("d", path)
       .attr("fill", function(d) { return gridColor(gridQuantile(d.properties.index_grid)); })
       // mouseover changes gridsquare fill and shows popover
       .on("mouseover", function(d) { 
-        d3.select(this).style("opacity","0.75");
+        d3.select(this).style("opacity","0.85");
         addPopover(this,d); })
       .on("mouseout", function(d) {
-        d3.selectAll(".gridsquare").style("opacity","1");
-        d3.selectAll(".gridsquare.active").style("opacity","0.75"); // keeps active township
+        d3.select(this).style("opacity","1");
+        d3.selectAll(".gridsquare.active").style("opacity","0.85"); // keeps active township
       })
-      .on("click", clicked);
+      .on("click", function(d) { clicked(this, d); });
 });
 
+
+/*** Create Legend ***/
+// Initialize the legend SVG
+var legend = d3.select("svg#legendSwatches")
+    .attr("width",$("#legendTitle").width()) // fit to width of #legend div
+    .attr("height", 10)
+  .append("g")
+    .attr("class", "legend");
+
+/// Set scale for legend such that the four colors will have equal horizontal spacing
+var x = d3.scale.linear()
+    .domain([0, 3])
+    .range([0, $("#legendTitle").width()/4*3]);
+
+// Add color swatch rectanges
+legend.selectAll("rect")
+    .data([0,1,2,3])
+  .enter().append("rect")
+    .attr("height", $("svg#legendSwatches").height())
+    .attr("x", function(d) { return x(d); })
+    .attr("width", $("#legendTitle").width()/4)
+    .style("fill", function(d) { return townColor(d); });
+
+
+/*** Feature Functions ***/
 // Adds popovers for displaying detailed information of townships
 function addPopover(el,d) {
 
@@ -411,14 +407,10 @@ function addPopover(el,d) {
 
 /* Click and zoom to townships 
     (based on http://bl.ocks.org/mbostock/2206590) */
-function clicked(d) {
+function clicked(el, d) {
   var x, y, k;
 
-  if (d.text != null) {
-    d = d3.selectAll(".township.t" + d.properties.GBTOWN);
-  }
-
-  if (d && centered !== d) {
+  if ((d && centered !== d) && !(d3.select(el).classed("waterboundary"))) {
     var centroid = path.centroid(d);
     x = centroid[0];
     y = centroid[1];
@@ -451,18 +443,22 @@ function clicked(d) {
     .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
     .style("stroke-width", 1.5 / k + "px");
 
+/**
   if (d && centered !== d) {
-    hideInfo(d);
+    hideGrids(d);
   } else {
-    showInfo(d);
-  }
+    showGrids(d);
+  }**/
 }
 
-// Show information pane below map
-function showInfo(d) {
-/*  ip = document.getElementById('infoPane');
-  ip.style.visibility = "visible";
-  document.getElementById('townshipinfo').innerHTML = d.properties.ENAME;*/
+// Set height of map-space according to height of window
+function setHeight() {
+  $("#map").height($(window).height());
+  return $("#map").height();
+}
+
+// Show Grid Squares
+function showGrids(d) {
 
   // Make grid squares visible
   gg.selectAll("path").style("visibility","visible");
@@ -470,34 +466,13 @@ function showInfo(d) {
   return;
 }
 
-// Hide information pane below map
-function hideInfo(d) {
-/*  ip = document.getElementById('infoPane');
-  ip.style.visibility = "hidden";*/
+// Hide Grid Squares
+function hideGrids(d) {
 
   // Make grid squares invisible
   gg.selectAll("path").style("visibility","hidden");
 
   return;
 }
-
-//Add legend for choropleths
-var legend = d3.select("svg#legendSwatches")
-    .attr("width",$("#legendTitle").width())
-    .attr("height", 10)
-  .append("g")
-    .attr("class", "legend");
-
-var x = d3.scale.linear()
-    .domain([0, 3])
-    .range([0, $("#legendTitle").width()/4*3]);
-
-legend.selectAll("rect")
-    .data([0,1,2,3])
-  .enter().append("rect")
-    .attr("height", $("svg#legendSwatches").height())
-    .attr("x", function(d) { return x(d); })
-    .attr("width", $("#legendTitle").width()/4)
-    .style("fill", function(d) { return townColor(d); });
 
 </script>
