@@ -306,13 +306,13 @@ var townQuantile = d3.scale.quantile()
 
 // Set color palette for grid choropleth
 var gridColor = d3.scale.ordinal()
-  .domain(d3.range(5))
-  .range(colorbrewer.Reds[5]);
+  .domain(d3.range(4))
+  .range(colorbrewer.Reds[4]);
 
 // Quantize grid square indices into quintiles
 var gridQuantile = d3.scale.quantile()
     .domain([-0.252467,3.463016]) // Min/Max Grabbed by hand, sorting in QGIS
-    .range(d3.range(5));
+    .range(d3.range(4));
 
 
 /*** Render Geography ***/
@@ -353,7 +353,7 @@ d3.json(grids, function(error, gs) {
     .enter().append("path")
       .attr("class", function(d) { return "gridsquare g"+d.properties.PageNumber; })
       .attr("d", path)
-      .attr("fill", function(d) { return gridColor(gridQuantile(d.properties.Index_g_14)); })
+      .attr("fill", function(d) { return gridColor(gridQuantile(d.properties.index_town)); })
       // mouseover changes gridsquare fill and shows popover
       .on("mouseover", function(d) { 
         d3.select(this).style("opacity","0.85");
