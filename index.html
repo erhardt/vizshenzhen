@@ -156,14 +156,40 @@ a {
   padding: 0;
 }
 
-#aboutTitle {
-  display: inline;
-  float: left;
+#about ul {
+  list-style-type: none;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  clear: none;
 }
 
 #aboutClose {
-  display: inline;
-  float: right;
+  position: absolute;
+  top: 10px;
+  right: 20px;
+}
+
+#aboutLink {
+  position: absolute;
+  bottom: 0px;
+  left: 0px;
+  margin: 0;
+  border: 0;
+  padding: 10px 25px 10px 20px;
+  color: #fff;
+  background-color: #000;
+}
+
+#aboutLink p {
+  cursor: pointer;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+#aboutLink p:hover {
+  color: #ff0000;
 }
 
 #closer {
@@ -180,6 +206,11 @@ a {
 }
 
 /* Classes */
+.aHead {
+  font-weight: bolder;
+  display: inline;
+}
+
 .background {
   fill: #000;
   pointer-events: all;
@@ -212,7 +243,7 @@ a {
 }
 
 .township {
-  stroke: #000;
+  stroke: #808080;
   stroke-opacity: 1;
   stroke-width: 0px;
   cursor: pointer;
@@ -245,7 +276,6 @@ a {
 </style>
 <body>
 <script src="libs/js/d3.v3.min.js"></script>
-<script src="libs/js/colorbrewer.js"></script>
 <script src="libs/js/jquery-2.0.0.min.js"></script>
 <script src="libs/js/jquery.popover-1.1.2.js"></script>
 
@@ -264,6 +294,9 @@ a {
   <div id="mapContainer">
       <svg xmlns="http://www.w3.org/2000/svg" width="100%" id="map"></svg>
   </div>
+  <div id="aboutLink">
+    <p onClick="showAbout();">about</p>
+  </div>
   <div id="legend">
     <p id="legendTitle">INNOVATION POTENTIAL BY LOCALE</p>
    <svg xmlns="http://www.w3.org/2000/svg" id="legendSwatches"></svg>
@@ -273,11 +306,21 @@ a {
     </div>
   </div>
   <div id="about">
-    <div id="aboutTitle"><p>ABOUT</p></div><div id="aboutClose"><p onClick="closeAbout()" id="closer">X</p></div>
     <div id="aboutDescription">
-      <p>Understanding that young, hip Weibo users may be a proxy for a Chinese creative class, we aim to characterize areas by their diversity of workers, across many industries, and access to cultural amenities and key infrastructure. We believe more diverse and accessible places are prime for innovation and information spillover. So where are these places? We start by looking at data from the 2000 census for workers employed by industry. This grounds our study in what may be a historical entrenchment of industry location and mix by township. Weibo check-in data from 2013 gives us contemporary proxies for what a young creative class might experience and where through proximity to libraries, public transportation stops, and food and drink venues. We spotlight the northwest district of Bao’an and core district of Luohu to contrast these mixes of industry and lifestyle.</p>
-      <p>In order to combine shares of different indicators, each is standardized using the inter-decile range standardization method. This method compares each value of a variable (X<sub>i</sub>) to the median (X<sub>med</sub>), which is then divided by the distance between the value of that variable at the 90th percentile of the distribution (X<sub>90</sub>) and the 10th percentile (X<sub>10</sub>):  This method was judged more appropriate for these data than Z-score standardization, which compares each value of a variable to the mean and divides their difference by the standard deviation, as the values are not likely to follow a normal distribution. It was also preferred to range standardization (which compares each value of a variable to the minimum and divides their residual by the distance between the minimum and the maximum) because of the sensitivity of this latter method to outliers. Inter-decile range standardization helps to minimize the influence of outliers by using the 90th and the 10th percentile values instead of the minimum and maximum values, and best reflects the non-normal distribution of the different indicators.</p>
-      <p>Standardized Score = &sum;((x<sub>i</sub> -x<sub>med</sub> )/ (x<sub>90</sub> – x<sub>10</sub>))</p>
+      <div id="aboutClose"><span onClick="closeAbout()" id="closer">X</span></div>
+      <p><span class="aHead">ABOUT</span><br/>IN THE MIX visualizes data from the popular Chinese social media platform Weibo, along with 2000 Census data on four indicators representing potential innovation by township in Shenzhen, China. The premise of this index is that young, hip Weibo users in China may be a proxy for the location of an emergent “creative class”#mdash;characterized by diversity of workers and industries, access to cultural amenities and key infrastructure. Diverse and accessible places cultivate innovation and information spillover. By exploring data from the 2000 Census on what type of industry workers are employed in by township, we begin to see the mix of the kind of worker that lives in Shenzhen. This information provides an historical take on the entrenchment of industry location and mix by township. Weibo check-in data from 2013 gives us contemporary proxies for what a young creative class might experience and where through proximity to libraries, public transportation stops, and food and drink venues. We spotlight the northwest district of Bao’an and core district of Luohu to contrast these mixes of industry and lifestyle.</p>
+      <div id="popHelp"><p class="aHead">INNOVATION POTENTIAL INDEX =</p>
+      <ul>
+        <li>Emp: Diversity in Workers by Type of Industry (Census)</li>
+        <li>Food: Presence of non-local Cuisine/Diverse Amenities (Weibo)</li>
+        <li>Edu: Presence of Higher Education (Weibo)</li>
+        <li>Ind: Presence of Industrial Parks (Weibo)</li>
+      </ul></div>
+      <p>The information is represented at two scales, the first by township in a traditional choropleth map, the other as a grid overlay, showing a smaller scale look at the data per 1,000 meters square. Each township and grid square contains in-depth data on the specific make up for each location.</p>
+      <p><span class="aHead">METHOD</span><br/>In order to combine shares of different indicators (industrial parks, higher education, non-local cuisine, and diversity in workers by type of Industry) each is first standardized using the inter-decile range standardization method. This method compares each value of a variable (X<sub>i</sub>) to the median (X<sub>med</sub>), which is then divided by the distance between the value of that variable at the 90th percentile of the distribution (X<sub>90</sub>) and the 10th percentile (X<sub>10</sub>).  After each has been standardized, an average across the indicators (industrial parks, higher education, non-local cuisine, and diversity in workers by type of Industry) is calculated.</p>
+      <p>Standardized Score = 1/n * &sum; ((x<sub>i</sub> - x<sub>med</sub> ) / (x<sub>90</sub> - x<sub>10</sub>))</p>
+      <p><span class="aHead">SOURCES</span><br />2013 Weibo Data, 2000 Chinese Census Data</p>
+      <p><i>IN THE MIX is a data visualization project produced at MIT’s Department of Urban Studies and Planning for the forthcoming 2013 Hong Kong-Shenzhen Biennale.</i></p>
     </div>
   </div>
 </div>
@@ -313,25 +356,28 @@ var gw = map.append("g").attr("id","waterboundaries");
 var gt = map.append("g").attr("id","townships");
 var gg = map.append("g").attr("id","grids");
 
+// Colors for Grid Squares
+var GridRed = ["rgba(28,01,01,0.6)","#690101","#A50303","#c40000","#e50303"];
+
 // Set color palette for township choropleth
 var townColor = d3.scale.ordinal()
-  .domain(d3.range(4))
-  .range(colorbrewer.Reds[4]);
+  .domain(d3.range(5))
+  .range(GridRed);
 
 // Quantize town indices into quintiles
 var townQuantile = d3.scale.quantile()
     .domain([-0.338590,0.534757]) // Min/Max Grabbed by hand, sorting in QGIS
-    .range(d3.range(4));
+    .range(d3.range(5));
 
 // Set color palette for grid choropleth
 var gridColor = d3.scale.ordinal()
-  .domain(d3.range(4))
-  .range(colorbrewer.Reds[4]);
+  .domain(d3.range(5))
+  .range(GridRed);
 
 // Quantize grid square indices into quintiles
 var gridQuantile = d3.scale.quantile()
     .domain([-0.252467,3.463016]) // Min/Max Grabbed by hand, sorting in QGIS
-    .range(d3.range(4));
+    .range(d3.range(5));
 
 
 /*** Render Geography ***/
@@ -395,12 +441,12 @@ var legend = d3.select("svg#legendSwatches")
 
 /// Set scale for legend such that the four colors will have equal horizontal spacing
 var x = d3.scale.linear()
-    .domain([0, 3])
+    .domain([0, 4])
     .range([0, $("#legendTitle").width()/4*3]);
 
 // Add color swatch rectanges
 legend.selectAll("rect")
-    .data([0,1,2,3])
+    .data([0,1,2,3,4])
   .enter().append("rect")
     .attr("height", $("svg#legendSwatches").height())
     .attr("x", function(d) { return x(d); })
@@ -432,7 +478,7 @@ function addPopover(el,d) {
     /*$(el).popover('destroy');   // delete existing popovers*/
   } else { 
     $(el).popover({
-      'title': name+'<span onClick="showAbout()" class="popoverQuestion">?</span>',
+      'title': name+'<span onClick="showAbout(this)" class="popoverQuestion">?</span>',
       'html': true,
       'classes': id,
       'content': '<svg class="'+id+'"></svg>',
@@ -545,11 +591,10 @@ function showGrids(d) {
   $("#townshipTog").removeClass("active");
   $("#gridTog").addClass("active");
 
-  // Change color of Townships to Greys
-  townColor.range(colorbrewer.Greys[4]);
-
+  // Change color of Townships to Black
   gt.selectAll("path").transition().delay(0)
-    .attr("fill", function(d) { return townColor(townQuantile(d.properties.index_town)); })
+    .attr("fill", "#000")
+    .style("stroke-width","1px");
 
   // Make grid squares visible
   gg.selectAll("path").style("visibility","visible");
@@ -565,10 +610,11 @@ function hideGrids(d) {
   $("#townshipTog").addClass("active");
 
   // Change color of Townships back to reds
-  townColor.range(colorbrewer.Reds[4]);
+  townColor.range(GridRed);
 
   gt.selectAll("path").transition().delay(0)
     .attr("fill", function(d) { return townColor(townQuantile(d.properties.index_town)); })
+    .style("stroke-width","0px");
 
   // Make grid squares invisible
   gg.selectAll("path").style("visibility","hidden");
@@ -582,8 +628,18 @@ function closeAbout() {
 }
 
 // Close the about popup
-function showAbout() {
+function showAbout(el) {
   $("#about").css("visibility","visible");
+  
+  console.log($(el).attr("id"));
+
+  if ($(el).hasClass("popoverQuestion")) {
+    $("#about p").css("color","rgba(255,255,255,0.15)")
+    $("#popHelp").css("color","#ff0000");
+  } else {
+    $("#about p").css("color","#fff")
+    $("#popHelp").css("color","#fff");
+  }
 }
 
 // Style about box according to dimensions of window
