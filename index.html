@@ -264,12 +264,22 @@ a {
   fill: #808080;
 }
 
+.x.axis path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1px;
+}
+
 .x.axis text {
   fill: #fff;
 }
 
-.x.axis path {
+.y.axis path {
   visibility: hidden;
+}
+
+.y.axis text {
+  fill: #fff;
 }
 
 </style>
@@ -488,7 +498,7 @@ function addPopover(el,d) {
 
     var dataset = [d.properties.index_emp,d.properties.index_food, d.properties.index_coll, d.properties.index_ind];
 
-    var margin = {top: 10, right: 5, bottom: 30, left: 5},
+    var margin = {top: 10, right: 5, bottom: 30, left: 15},
         w = 180 - margin.left - margin.right,
         h = 180 - margin.top - margin.bottom;
 
@@ -503,8 +513,7 @@ function addPopover(el,d) {
         .domain(d3.range(dataset.length))
         .rangeRoundBands([0, w], .2);
 
-    // Create X Axis
-    /*var indices = ["Employment Mix","Non-native Cuisine Proximity","College Proximity","Industrial Site Proximity"];*/
+    // Prepare X Axis (shows labels)
     var indices = ["Emp","Food","Coll","Ind"];
     
     var formatIndices = function(d) {
@@ -514,14 +523,25 @@ function addPopover(el,d) {
     var xAxis = d3.svg.axis()
       .scale(x)
       .orient("bottom")
+      .tickSize(0)
       .tickFormat(formatIndices);
 
+    // Prepare Y Axis (only shows 0 at x-axis)
+    var yAxis = d3.svg.axis()
+      .scale(y)
+      .orient("left")
+      .tickSize(0)
+      .tickValues([0])
+      .tickFormat(d3.format("d"));
+
+    // Find and instantiate svg element in popover, and set dimensions
     var svg = d3.select("svg."+id)
         .attr("width", w + margin.left + margin.right)
         .attr("height", h + margin.top + margin.bottom)
       .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+    // Create bar graph
     svg.selectAll(".bar")
         .data(dataset)
       .enter().append("rect")
@@ -531,10 +551,19 @@ function addPopover(el,d) {
         .attr("height", function(d) { return Math.abs(y(d) - y(0)); })
         .attr("width", x.rangeBand());
 
+    // Create X Axis
     svg.append("g")
-        .attr("transform","translate(0,"+(y(0)*2)+")")
-        .attr("class", "x axis")
-        .call(xAxis);
+      .attr("transform","translate(0,"+y(0)+")") // offset by max height of a bar to get to the middle
+      .attr("class", "x axis")
+      .call(xAxis);
+
+    svg.selectAll(".x.axis text")
+      .attr("transform","translate(0,"+y(0)+")"); // offset by max height of a bar to get to bottom
+
+    // Create Y Axis
+    svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
   }
 }
 
