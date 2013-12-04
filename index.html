@@ -179,25 +179,36 @@ a {
   clear: left;
 }
 
+/* Classes */
 .background {
   fill: #000;
   pointer-events: all;
 }
 
 .bar.positive {
-  fill: green;
+  fill: #ff0000;
 }
 
 .bar.negative {
-  fill: red;
+  fill: #ff0000;
 }
 
-/* Classes */
 .gridsquare {
   stroke-width: 0px;
   stroke: #000;
   visibility: hidden;
   cursor: pointer;
+}
+
+.popoverQuestion {
+  background-color: #fff;
+  color: #000;
+  padding: 0 5px 0 6px;
+  border-radius: 50%;
+  cursor: pointer;
+  position: absolute;
+  right: 8px;
+  font-weight: bold;
 }
 
 .township {
@@ -221,6 +232,14 @@ a {
 
 .waterboundary {
   fill: #808080;
+}
+
+.x.axis text {
+  fill: #fff;
+}
+
+.x.axis path {
+  visibility: hidden;
 }
 
 </style>
@@ -413,7 +432,7 @@ function addPopover(el,d) {
     /*$(el).popover('destroy');   // delete existing popovers*/
   } else { 
     $(el).popover({
-      'title': name,
+      'title': name+'<span onClick="showAbout()" class="popoverQuestion">?</span>',
       'html': true,
       'classes': id,
       'content': '<svg class="'+id+'"></svg>',
@@ -424,7 +443,7 @@ function addPopover(el,d) {
 
     var dataset = [d.properties.index_emp,d.properties.index_food, d.properties.index_coll, d.properties.index_ind];
 
-    var margin = {top: 10, right: 5, bottom: 5, left: 10},
+    var margin = {top: 10, right: 5, bottom: 30, left: 5},
         w = 180 - margin.left - margin.right,
         h = 180 - margin.top - margin.bottom;
 
@@ -433,16 +452,24 @@ function addPopover(el,d) {
     var y = d3.scale.linear()
         .domain([-y0, y0])
         .range([h,0])
-        .nice();
+        .nice()
 
     var x = d3.scale.ordinal()
         .domain(d3.range(dataset.length))
-        /*.range(["Food","College","Industry"])*/
         .rangeRoundBands([0, w], .2);
 
-    var yAxis = d3.svg.axis()
-        .scale(y)
-        .orient("left");
+    // Create X Axis
+    /*var indices = ["Employment Mix","Non-native Cuisine Proximity","College Proximity","Industrial Site Proximity"];*/
+    var indices = ["Emp","Food","Coll","Ind"];
+    
+    var formatIndices = function(d) {
+      return indices[d % 4];      
+    }
+
+    var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient("bottom")
+      .tickFormat(formatIndices);
 
     var svg = d3.select("svg."+id)
         .attr("width", w + margin.left + margin.right)
@@ -460,16 +487,9 @@ function addPopover(el,d) {
         .attr("width", x.rangeBand());
 
     svg.append("g")
+        .attr("transform","translate(0,"+(y(0)*2)+")")
         .attr("class", "x axis")
-        .call(yAxis);
-
-    svg.append("g")
-        .attr("class", "y axis")
-      .append("line")
-        .attr("y1", y(0))
-        .attr("y2", y(0))
-        .attr("x1", 0)
-        .attr("x2", w);
+        .call(xAxis);
   }
 }
 
@@ -559,6 +579,11 @@ function hideGrids(d) {
 // Close the about popup
 function closeAbout() {
   $("#about").css("visibility","hidden");
+}
+
+// Close the about popup
+function showAbout() {
+  $("#about").css("visibility","visible");
 }
 
 // Style about box according to dimensions of window
