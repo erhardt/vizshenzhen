@@ -2,6 +2,7 @@
 <meta charset="utf-8">
 <link href="libs/css/popover.css" rel="stylesheet">
 <link href="libs/css/popover-override.css" rel="stylesheet">
+<link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400,300,700' rel='stylesheet' type='text/css'>
 <style>
 
 /* Elements */
@@ -13,7 +14,7 @@ body {
 }
 
 h1, h2, h3, p, ul, text, div {
-  font-family: "Gill Sans","Helvetica Neue","Helvetica","Arial",sans-serif;
+  font-family: "Open Sans","Gill Sans","Helvetica Neue","Helvetica","Arial",sans-serif;
   font-weight: lighter;
 }
 
@@ -147,6 +148,7 @@ a {
   padding: 10px 20px 5px;
   color: #fff;
   background-color: rgba(0,0,0,0.85);
+  visibility: hidden;
 }
 
 #about p {
@@ -242,7 +244,7 @@ a {
 }
 
 .township {
-  stroke: #808080;
+  stroke: #505050;
   stroke-opacity: 1;
   stroke-width: 0px;
   cursor: pointer;
@@ -252,16 +254,8 @@ a {
   opacity: 0.85;
 }
 
-.township-label {
-  fill: #000;
-  font-size: 15px;
-  font-weight: 300;
-  text-anchor: middle;
-  visibility: hidden;
-}
-
 .waterboundary {
-  fill: #808080;
+  fill: #505050;
 }
 
 .x.axis path {
@@ -287,6 +281,8 @@ a {
 <script src="libs/js/d3.v3.min.js"></script>
 <script src="libs/js/jquery-2.0.0.min.js"></script>
 <script src="libs/js/jquery.popover-1.1.2.js"></script>
+<script src="libs/js/simple_statistics.js"></script>
+<script src="libs/js/colorbrewer.js"></script>
 
 <div id="container">
   <div id="header">
@@ -317,7 +313,7 @@ a {
   <div id="about">
     <div id="aboutDescription">
       <div id="aboutClose"><span onClick="closeAbout()" id="closer">X</span></div>
-      <p><span class="aHead">ABOUT</span><br/>IN THE MIX visualizes data from the popular Chinese social media platform Weibo, along with 2000 Census data on four indicators representing potential innovation by township in Shenzhen, China. The premise of this index is that young, hip Weibo users in China may be a proxy for the location of an emergent “creative class”&mdash;characterized by diversity of workers and industries, access to cultural amenities and key infrastructure. Diverse and accessible places cultivate innovation and information spillover. By exploring data from the 2000 Census on what type of industry workers are employed in by township, we begin to see the mix of the kind of worker that lives in Shenzhen. This information provides an historical take on the entrenchment of industry location and mix by township. Weibo check-in data from 2013 gives us contemporary proxies for what a young creative class might experience and where through proximity to libraries, public transportation stops, and food and drink venues. We spotlight the northwest district of Bao’an and core district of Luohu to contrast these mixes of industry and lifestyle.</p>
+      <p><span class="aHead">ABOUT</span><br/>IN THE MIX visualizes data from the popular social media platform Weibo, along with 2000 Census data on four indicators representing potential innovation by township in Shenzhen, China. The premise of this index is that young, hip Weibo users can be a proxy for the location of an emergent "creative class"&mdash;characterized by diversity of workers and industries, access to cultural amenities and key infrastructure. Diverse and accessible places cultivate innovation and information spillover. Exploring 2000 Census data on what industry workers are employed in by township, we see the mix of workers that live in Shenzhen. 2013 Weibo check-ins provide a contemporary proxy for what young creatives might experience near libraries, public transportation, food and drink venues.</p>
       <div id="popHelp"><span class="aHead">INNOVATION POTENTIAL INDEX =</span>
       <ul>
         <li>Emp: Diversity in Workers by Type of Industry (Census)</li>
@@ -340,7 +336,7 @@ a {
 // Set data sources
 var waterboundaries = "data/waterboundary.json";
 var townships = "data/Index_Township.json";
-var grids = "data/Index_Grid.json";
+var grids = "data/Index_grid_Updated.json";
 
 // Set main map svg element 
 var map = d3.select("svg");
@@ -366,27 +362,29 @@ var gt = map.append("g").attr("id","townships");
 var gg = map.append("g").attr("id","grids");
 
 // Colors for Grid Squares
-var GridRed = ["rgba(28,01,01,0.6)","#690101","#A50303","#c40000","#e50303"];
+var GridRed = ["rgba(141,01,01,0.5)","#a00808","#C61818","#d92020"];
 
 // Set color palette for township choropleth
 var townColor = d3.scale.ordinal()
-  .domain(d3.range(5))
+  .domain(d3.range(GridRed.length))
   .range(GridRed);
 
 // Quantize town indices into quintiles
-var townQuantile = d3.scale.quantile()
+var townScale;
+/**townScale = d3.scale.quantile()
     .domain([-0.338590,0.534757]) // Min/Max Grabbed by hand, sorting in QGIS
-    .range(d3.range(5));
+    .range(d3.range(GridRed.length));**/
 
 // Set color palette for grid choropleth
 var gridColor = d3.scale.ordinal()
-  .domain(d3.range(5))
+  .domain(d3.range(GridRed.length))
   .range(GridRed);
 
 // Quantize grid square indices into quintiles
-var gridQuantile = d3.scale.quantile()
-    .domain([-0.252467,3.463016]) // Min/Max Grabbed by hand, sorting in QGIS
-    .range(d3.range(5));
+var gridScale;
+/**gridScale = d3.scale.quantile()
+    .domain([-0.252,1.254]) // Min/Max Grabbed by hand, sorting in QGIS
+    .range(d3.range(GridRed.length));**/
 
 
 /*** Render Geography ***/
@@ -402,13 +400,19 @@ d3.json(waterboundaries, function(error, wb) {
 
 // Add township polygons
 d3.json(townships, function(error, sz) {
+  
+  // Set scale for townships based on Jenks natural breaks computed by simple_statistics.js
+  townScale = d3.scale.threshold()
+      .domain(ss.jenks(sz.features.map(function(d) { return +d.properties.index_town; }), 4))
+      .range(d3.range(4).map(function(i) { return "q" + i + "-4"; }));
+
   gt.selectAll(".township")
   	  .data(sz.features)
     .enter().append("path")
     	.attr("class", function(d) { return "township " + "t" + d.properties.GBTOWN; })
     	.attr("d", path)
       // colors for categories
-      .attr("fill", function(d) { return townColor(townQuantile(d.properties.index_town)); })
+      .attr("fill", function(d) { return townColor(townScale(d.properties.index_town)); })
       // mouseover changes township fill and shows popover
     	.on("mouseover", function(d) { 
         d3.select(this).style("opacity","0.75");
@@ -422,12 +426,18 @@ d3.json(townships, function(error, sz) {
 
 // Add grid square polygons
 d3.json(grids, function(error, gs) {
+
+  // Set scale for grid squares based on Jenks natural breaks computed by simple_statistics.js
+  gridScale = d3.scale.threshold()
+      .domain(ss.jenks(gs.features.map(function(d) { return +d.properties.index_town; }), 4))
+      .range(d3.range(4).map(function(i) { return "q" + i + "-4"; }));
+
   gg.selectAll(".gridsquare")
       .data(gs.features)
     .enter().append("path")
       .attr("class", function(d) { return "gridsquare g"+d.properties.PageNumber; })
       .attr("d", path)
-      .attr("fill", function(d) { return gridColor(gridQuantile(d.properties.index_town)); })
+      .attr("fill", function(d) { return gridColor(gridScale(d.properties.index_town)); })
       // mouseover changes gridsquare fill and shows popover
       .on("mouseover", function(d) { 
         d3.select(this).style("opacity","0.85");
@@ -437,6 +447,7 @@ d3.json(grids, function(error, gs) {
         d3.selectAll(".gridsquare.active").style("opacity","0.85"); // keeps active township
       })
       .on("click", function(d) { clicked(this, d); });
+      //.filter(function(d) { return ((d.properties.index_food == null) && (d.properties.index_coll == null) && (d.properties.index_ind == null)); }).remove(); // remove those grid squares that contain no food, education, or industry indices
 });
 
 
@@ -450,12 +461,12 @@ var legend = d3.select("svg#legendSwatches")
 
 /// Set scale for legend such that the four colors will have equal horizontal spacing
 var x = d3.scale.linear()
-    .domain([0, 4])
+    .domain([0, GridRed.length-1])
     .range([0, $("#legendTitle").width()/4*3]);
 
 // Add color swatch rectanges
 legend.selectAll("rect")
-    .data([0,1,2,3,4])
+    .data(d3.range(0, GridRed.length))
   .enter().append("rect")
     .attr("height", $("svg#legendSwatches").height())
     .attr("x", function(d) { return x(d); })
@@ -479,7 +490,7 @@ function addPopover(el,d) {
     name = d.properties.ENAME;
   } else {
     id = "g" + d.properties.PageNumber;
-    name = "Grid #" + d.properties.PageNumber;
+    name = d.properties.ENAME + " (#" + d.properties.PageNumber + ")";
   }
 
   // Create popover
@@ -502,6 +513,7 @@ function addPopover(el,d) {
         w = 180 - margin.left - margin.right,
         h = 180 - margin.top - margin.bottom;
 
+        // THIS RESULTS IN ALL THE MISALIGNMENT BETWEEN EQUAL THINGS IN DIFFERENT GRID SQUARES
     var y0 = Math.max(Math.abs(d3.min(dataset)), Math.abs(d3.max(dataset)));
 
     var y = d3.scale.linear()
@@ -541,6 +553,13 @@ function addPopover(el,d) {
       .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+    // Replace null values with zeros to make sure that y-axis in pop-ups doesn't collapse when all are missing
+    for (var i=0;i<dataset.length;i++) {
+      if (dataset[i] == null) {
+        dataset[i] = 0;
+      }
+    } 
+
     // Create bar graph
     svg.selectAll(".bar")
         .data(dataset)
@@ -564,6 +583,17 @@ function addPopover(el,d) {
     svg.append("g")
       .attr("class", "y axis")
       .call(yAxis);
+
+    // Strikethrough axis labels where values are null
+    if (d.properties.index_coll == null) {
+      $(".popover.g"+d.properties.PageNumber+" text:contains('Edu')").css("text-decoration","line-through");
+    }
+    if (d.properties.index_ind == null) {
+      $(".popover.g"+d.properties.PageNumber+" text:contains('Ind')").css("text-decoration","line-through");
+    }
+    if (d.properties.index_food == null) {
+      $(".popover.g"+d.properties.PageNumber+" text:contains('Food')").css("text-decoration","line-through");
+    }
   }
 }
 
@@ -641,7 +671,7 @@ function hideGrids(d) {
   townColor.range(GridRed);
 
   gt.selectAll("path").transition().delay(0)
-    .attr("fill", function(d) { return townColor(townQuantile(d.properties.index_town)); })
+    .attr("fill", function(d) { return townColor(townScale(d.properties.index_town)); })
     .style("stroke-width","0px");
 
   // Make grid squares invisible
@@ -657,16 +687,18 @@ function closeAbout() {
 
 // Close the about popup
 function showAbout(el) {
-  $("#about").css("visibility","visible");
-  
-  console.log($(el).attr("id"));
-
-  if ($(el).hasClass("popoverQuestion")) {
-    $("#about p").css("color","rgba(255,255,255,0.15)")
-    $("#popHelp").css("color","rgba(255,0,0,1)");
+  if ($("#about").css("visibility") == "visible") {
+    closeAbout();
   } else {
-    $("#about p").css("color","#fff")
-    $("#popHelp").css("color","#fff");
+    $("#about").css("visibility","visible");
+  
+    if ($(el).hasClass("popoverQuestion")) {
+      $("#about p").css("color","rgba(255,255,255,0.15)")
+      $("#popHelp").css("color","rgba(255,0,0,1)");
+    } else {
+      $("#about p").css("color","#fff")
+      $("#popHelp").css("color","#fff");
+    }
   }
 }
 
