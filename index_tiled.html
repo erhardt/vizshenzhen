@@ -1,6 +1,4 @@
 <!DOCTYPE html>
-<html>
-<head>
 <meta charset="utf-8">
 <link href="libs/css/popover.css" rel="stylesheet">
 <link href="libs/css/popover-override.css" rel="stylesheet">
@@ -79,9 +77,10 @@ a {
   color: #fff;
   background-color: #000;
   font-weight: bold;
+  text-align: center;
 }
 
-#townshipTog, #gridTog {
+#townshipTog, #gridTog, #recenter {
   cursor: pointer;
 }
 
@@ -89,17 +88,23 @@ a {
   color: #ff0000;
 }
 
-#mapContainer {
-  margin: 0;
-  border: 0;
-  padding: 0;
+#recenter {
+  color: rgba(255,255,255,.75);
 }
 
-#mapContainer svg {
-    display: block;
-    margin: 0 auto;
-    border: 0;
-    padding: 0;
+#recenter:hover {
+  color: rgba(255,255,255,1);
+}
+
+#recenter:active {
+  color: #ff0000;
+}
+
+#map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
 }
 
 #legend {
@@ -143,14 +148,13 @@ a {
 
 #about {
   position: absolute;
-  top: 50px;
-  left: 200px;
-  margin: 0;
+  top: 0;
+  left: 12%;
   border: 0;
   padding: 10px 20px 5px;
-  color: #fff;
-  background-color: rgba(0,0,0,0.85);
   visibility: hidden;
+  background-color: rgba(0,0,0,0.85);
+  color: #fff;
 }
 
 #about p {
@@ -205,7 +209,10 @@ a {
 
 #aboutDescription {
   display: block;
-  clear: left;
+  clear: both;
+  margin: 0;
+  border: 0;
+  padding: 0;
 }
 
 /* Classes */
@@ -302,7 +309,6 @@ a {
 }
 
 </style>
-</head>
 <body>
 <script src="libs/js/d3.v3.min.js"></script>
 <script src="libs/js/d3.geo.tile.js"></script>
@@ -310,6 +316,7 @@ a {
 <script src="libs/js/jquery.popover-1.1.2.js"></script>
 <script src="libs/js/simple_statistics.js"></script>
 
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" id="map"></svg>
 <div id="container">
   <div id="header">
     <p id="headerTitle"><a href="/">IN THE MIX</a></p>
@@ -320,10 +327,7 @@ a {
     </ul>
   </div>
   <div id="mapToggle">
-    <p id="toggleButtons"><span id="townshipTog" class="active" onClick="hideGrids()">TOWNSHIPS</span>&nbsp;::&nbsp;<span id="gridTog" onClick="showGrids();">GRID VIEW</span>
-  </div>
-  <div id="mapContainer">
-      <svg xmlns="http://www.w3.org/2000/svg" width="100%" id="map"></svg>
+    <p id="toggleButtons"><span id="townshipTog" class="active" onClick="hideGrids()">TOWNSHIPS</span>&nbsp;::&nbsp;<span id="gridTog" onClick="showGrids();">GRID VIEW</span><br/><span id="recenter" onClick="recenter();">(recenter map)</span>
   </div>
   <div id="aboutLink">
     <p onClick="showAbout();">about</p>
@@ -357,33 +361,44 @@ a {
 </div>
 
 <script>
-
 /*** Instantiate Global Variables ***/
 // Set data sources
-var waterboundaries = "data/waterboundary.json";
 var townships = "data/Index_Township.json";
-var grids = "data/Index_Grid";
+var grids = "data/Index_Grid.json";
+
+// Set dimensions of the map based on window dimensions
+var width = Math.max(960, window.innerWidth),
+    height = Math.max(500, window.innerHeight);
+var centered;
 
 // Set main map svg element 
-var map = d3.select("svg");
+var map = d3.select("#map")
+    .attr("width", width)
+    .attr("height", height);
 
-// Set dimensions of the map based on map element dimensions
-var width = $("#map").width();
-var height = setHeight(); // sets height of map based on window height and then stores to deal with Firefox var set / function call ordering
-var centered;
+// Create tiles for basemap
+var tile = d3.geo.tile()
+    .size([width, height]);
 
 // Set projection of map to Mercator and center over Shenzhen
 var projection = d3.geo.mercator()
-  .center([114.1666,22.6333])
-    .scale(65000)
+    .scale((13 << 15) / 2 / Math.PI)
     .translate([width / 2, height / 2]);
 
-// Set all path elements to conform to the selected projection
+var center = projection([114.1666,22.6333]);
+
 var path = d3.geo.path()
     .projection(projection);
 
+// Create zooming behavior based on projection
+var zoom = d3.behavior.zoom()
+    .scale(projection.scale() * 2 * Math.PI)
+    .scaleExtent([1 << 14, 1 << 25])
+    .translate([width - center[0], height - center[1]])
+    .on("zoom", zoomed);
+
 // Add path groups to map in order to ensure layering bottom to top
-var gw = map.append("g").attr("id","waterboundaries");
+var raster = map.append("g").attr("id","tiles");
 var gt = map.append("g").attr("id","townships");
 var gg = map.append("g").attr("id","grids");
 
@@ -414,40 +429,37 @@ var gridScale;
 
 
 /*** Render Geography ***/
-// Add waterboundary polygon
-d3.json(waterboundaries, function(error, wb) {
-  gw.selectAll(".waterboundary")
-    .data(wb.features)
-    .enter().append("path")
-      .attr("class","waterboundary")
-      .attr("d", path)
-      .on("click", function(d) { clicked(this, d); });
-});
-
 // Add township polygons
 d3.json(townships, function(error, sz) {
-  
+  map.call(zoom); // Initialize zoom
+
   // Set scale for townships based on Jenks natural breaks computed by simple_statistics.js
   townScale = d3.scale.threshold()
       .domain(ss.jenks(sz.features.map(function(d) { return +d.properties.index_town; }), 4))
       .range(d3.range(4).map(function(i) { return "q" + i + "-4"; }));
 
   gt.selectAll(".township")
-  	  .data(sz.features)
+      .data(sz.features)
     .enter().append("path")
-    	.attr("class", function(d) { return "township " + "t" + d.properties.GBTOWN; })
-    	.attr("d", path)
+      .attr("class", function(d) { return "township " + "t" + d.properties.GBTOWN; })
+      .attr("d", path)
       // colors for categories
       .attr("fill", function(d) { return townColor(townScale(d.properties.index_town)); })
       // mouseover changes township fill and shows popover
-    	.on("mouseover", function(d) { 
+      .on("mouseover", function(d) { 
         d3.select(this).style("opacity","0.75");
-        addPopover(this,d); })
-    	.on("mouseout", function(d) {
+        addPopover(this,d); 
+      })
+      .on("mouseout", function(d) {
         d3.selectAll(".township").style("opacity","1");
         d3.selectAll(".township.active").style("opacity","0.75"); // keeps active township
-    	})
-      .on("click", function(d) { clicked(this, d); });
+      });
+      /**.on("click", function(d) { 
+        clicked(this, d); 
+      });**/      
+
+  // Run zoom function to set layers
+  zoomed();
 });
 
 // Add grid square polygons
@@ -471,8 +483,7 @@ d3.json(grids, function(error, gs) {
       .on("mouseout", function(d) {
         d3.select(this).style("opacity","1");
         d3.selectAll(".gridsquare.active").style("opacity","0.85"); // keeps active township
-      })
-      .on("click", function(d) { clicked(this, d); });
+      });
       //.filter(function(d) { return ((d.properties.index_food == null) && (d.properties.index_coll == null) && (d.properties.index_ind == null)); }).remove(); // remove those grid squares that contain no food, education, or industry indices
 });
 
@@ -616,130 +627,6 @@ function addPopover(el,d) {
       $(".popover.g"+d.properties.PageNumber+" text:contains('Food')").css("text-decoration","line-through");
     }
   }
-
-
-
-//var width = Math.max(960, window.innerWidth),
-//    height = Math.max(500, window.innerHeight),
-  var prefix = prefixMatch(["webkit", "ms", "Moz", "O"]);
-
-  var tile = d3.geo.tile()
-    .size([width, height]);
-
-//var projection = d3.geo.mercator();
-
-var zoom = d3.behavior.zoom()
-    .scale(1 << 12)
-    .scaleExtent([1 << 9, 1 << 23])
-    .translate([width / 2, height / 2])
-    .on("zoom", zoomed);
-
-var map2 = d3.select("body").append("div")
-    .attr("class", "map")
-    .style("width", width + "px")
-    .style("height", height + "px")
-    .call(zoom)
-    .on("mousemove", mousemoved);
-
-var layer = map2.append("div")
-    .attr("class", "layer");
-
-var info = map2.append("div")
-    .attr("class", "info");
-
-zoomed();
-
-function zoomed() {
-  var tiles = tile
-      .scale(zoom.scale())
-      .translate(zoom.translate())
-      ();
-
-  projection
-      .scale(zoom.scale() / 2 / Math.PI)
-      .translate(zoom.translate());
-
-  var image = layer
-      .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
-    .selectAll(".tile")
-      .data(tiles, function(d) { return d; });
-
-  image.exit()
-      .remove();
-
-  image.enter().append("img")
-      .attr("class", "tile")
-      .attr("src", function(d) { return "http://" + ["a", "b", "c", "d"][Math.random() * 4 | 0] + ".tiles.mapbox.com/v3/examples.map-vyofok3q/" + d[2] + "/" + d[0] + "/" + d[1] + ".png"; })
-      .style("left", function(d) { return (d[0] << 8) + "px"; })
-      .style("top", function(d) { return (d[1] << 8) + "px"; });
-}
-
-function mousemoved() {
-  info.text(formatLocation(projection.invert(d3.mouse(this)), zoom.scale()));
-}
-
-function matrix3d(scale, translate) {
-  var k = scale / 256, r = scale % 1 ? Number : Math.round;
-  return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
-}
-
-function prefixMatch(p) {
-  var i = -1, n = p.length, s = document.body.style;
-  while (++i < n) if (p[i] + "Transform" in s) return "-" + p[i].toLowerCase() + "-";
-  return "";
-}
-
-function formatLocation(p, k) {
-  var format = d3.format("." + Math.floor(Math.log(k) / 2 - 2) + "f");
-  return (p[1] < 0 ? format(-p[1]) + "°S" : format(p[1]) + "°N") + " "
-       + (p[0] < 0 ? format(-p[0]) + "°W" : format(p[0]) + "°E");
-}
-
-}
-
-/* Click and zoom to townships 
-    (based on http://bl.ocks.org/mbostock/2206590) */
-function clicked(el, d) {
-  var x, y, k;
-
-  if ((d && centered !== d) && !(d3.select(el).classed("waterboundary"))) {
-    var centroid = path.centroid(d);
-    x = centroid[0];
-    y = centroid[1];
-    k = 3;
-    centered = d;
-  } else {
-    x = width / 2;
-    y = height / 2;
-    k = 1;
-    centered = null;
-  }
-
-  gt.selectAll("path")
-      .classed("active", centered && function(d) { return d === centered; });
-  gw.selectAll("path")
-      .classed("active", centered && function(d) { return d === centered; });
-  gg.selectAll("path")
-      .classed("active", centered && function(d) { return d === centered; });
-
-  gt.transition()
-    .duration(750)
-    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
-    .style("stroke-width", 1.5 / k + "px");
-  gw.transition()
-    .duration(750)
-    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
-    .style("stroke-width", 1.5 / k + "px");
-  gg.transition()
-    .duration(750)
-    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
-    .style("stroke-width", 1.5 / k + "px");
-}
-
-// Set height of map-space according to height of window
-function setHeight() {
-  $("#map").height($(window).height());
-  return $("#map").height();
 }
 
 // Show Grid Squares
@@ -751,7 +638,7 @@ function showGrids(d) {
 
   // Change color of Townships to Black
   gt.selectAll("path").transition().delay(0)
-    .attr("fill", "#000")
+    .attr("fill", "none")
     .style("stroke-width","1px");
 
   // Make grid squares visible
@@ -802,11 +689,57 @@ function showAbout(el) {
   }
 }
 
-// Style about box according to dimensions of window
+// Reset map to original center
+function recenter() {
+  scale = (13 << 15);
+  translate = [width - center[0], height - center[1]];
+
+  zoomed(scale, translate);
+}
+
+// Zoom function (kind of runs the show)
+// based on http://bl.ocks.org/mbostock/5342063
+function zoomed(scale,translate) {
+  if (scale == null) {
+    scale = zoom.scale();
+    translate = zoom.translate();
+  }
+
+  var tiles = tile
+      .scale(scale)
+      .translate(translate)
+      ();
+
+  projection
+      .scale(scale / 2 / Math.PI)
+      .translate(translate);
+
+  gt.selectAll(".township")
+      .attr("d", path);
+
+  gg.selectAll(".gridsquare")
+      .attr("d", path);
+
+  var image = raster
+      .attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")")
+    .selectAll("image")
+      .data(tiles, function(d) { return d; });
+
+  image.exit()
+      .remove();
+
+  image.enter().append("image")
+      .attr("xlink:href", function(d) { return "http://" + ["a", "b", "c", "d"][Math.random() * 4 | 0] + ".tiles.mapbox.com/v3/erhardt.ggjdc5cf/" + d[2] + "/" + d[0] + "/" + d[1] + ".png"; })
+      .attr("width", 1)
+      .attr("height", 1)
+      .attr("x", function(d) { return d[0]; })
+      .attr("y", function(d) { return d[1]; });
+}
+
+// Position and size #about box according to dimensions of window
 $(document).ready(function() {
-  $("#about").width($(document).width()/100*75);
-  $("#about").css("top",$(document).height()/2-$("#about").height()/2);
-  $("#about").css("left",$(document).width()/2-$("#about").width()/2);
+  $("#about").width($("#map").width()/100*75);
+  $("#about").css("top",$("#map").height()/2-($("#about").height()*2-$("#aboutDescription").height())/2);
 });
 
 </script>
