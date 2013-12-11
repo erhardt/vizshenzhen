@@ -285,6 +285,24 @@ a {
   fill: #fff;
 }
 
+.zoomer {
+  color: rgba(255,255,255,.75);
+  background-color: #000;
+  padding: 2px, 5px;
+  border: 1px solid rgba(255,255,255,.75);
+  clear: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.zoomer:hover {
+  background-color: rgba(255,255,255,1);
+}
+
+.zoomer:active {
+  background-color: rgba(255,0,0,1);
+}
+
 /* Map tiles */
 .map {
   position: relative;
@@ -327,7 +345,7 @@ a {
     </ul>
   </div>
   <div id="mapToggle">
-    <p id="toggleButtons"><span id="townshipTog" class="active" onClick="hideGrids()">TOWNSHIPS</span>&nbsp;::&nbsp;<span id="gridTog" onClick="showGrids();">GRID VIEW</span><br/><span id="recenter" onClick="recenter();">(recenter map)</span>
+    <p id="toggleButtons"><span id="townshipTog" class="active" onClick="hideGrids()">TOWNSHIPS</span>&nbsp;::&nbsp;<span id="gridTog" onClick="showGrids();">GRID VIEW</span><br/><span class="zoomer" onClick="zoomIn();">+</span><span class="zoomer" onClick="zoomOut();">-</span><span id="recenter" onClick="recenter();">(recenter map)</span>
   </div>
   <div id="aboutLink">
     <p onClick="showAbout();">about</p>
@@ -397,6 +415,10 @@ var zoom = d3.behavior.zoom()
     .translate([width - center[0], height - center[1]])
     .on("zoom", zoomed);
 
+console.log(zoom.scale());
+console.log(zoom.scale()/2/Math.PI);
+
+
 // Add path groups to map in order to ensure layering bottom to top
 var raster = map.append("g").attr("id","tiles");
 var gt = map.append("g").attr("id","townships");
@@ -453,10 +475,7 @@ d3.json(townships, function(error, sz) {
       .on("mouseout", function(d) {
         d3.selectAll(".township").style("opacity","1");
         d3.selectAll(".township.active").style("opacity","0.75"); // keeps active township
-      });
-      /**.on("click", function(d) { 
-        clicked(this, d); 
-      });**/      
+      });   
 
   // Run zoom function to set layers
   zoomed();
@@ -689,10 +708,27 @@ function showAbout(el) {
   }
 }
 
+function zoomIn() {
+  scale = (zoom.scale()+zoom.scale()*0.50);
+  translate = zoom.translate();
+
+  console.log(scale);
+
+  //map.call(zoom.scale((zoom.scale() << 1)));
+  zoomed(scale, translate);
+}
+
+function zoomOut() {
+  var scale = (zoom.scale() >>> (zoom.scale()+1));
+  var translate = zoom.translate();
+
+  zoomed(scale, translate);
+}
+
 // Reset map to original center
 function recenter() {
-  scale = (13 << 15);
-  translate = [width - center[0], height - center[1]];
+  var scale = (13 << 15);
+  var translate = [width - center[0], height - center[1]];
 
   zoomed(scale, translate);
 }
@@ -739,7 +775,7 @@ function zoomed(scale,translate) {
 // Position and size #about box according to dimensions of window
 $(document).ready(function() {
   $("#about").width($("#map").width()/100*75);
-  $("#about").css("top",$("#map").height()/2-($("#about").height()*2-$("#aboutDescription").height())/2);
+  $("#about").css("top",Math.max(0,$("#map").height()/2-($("#about").height()*2-$("#aboutDescription").height())/2));
 });
 
 </script>
