@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Leaflet Layers Control Example</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="libs/css/leaflet.css">
+<link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400,300,700' rel='stylesheet' type='text/css'>
+
+<!--[if lte IE 8]><link rel="stylesheet" href="libs/css/leaflet.ie.css" /><![endif]-->
+
+<style>
+#map {
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+.leaflet-container, text {
+    background: #000;
+    font: 15px "Open Sans","Gill Sans","Helvetica Neue","Helvetica","Arial",sans-serif;
+    font-weight: lighter;
+}
+
+.leaflet-top .leaflet-control, 
+.leaflet-right .leaflet-control, 
+.leaflet-bottom .leaflet-control, 
+.leaflet-left .leaflet-control {
+	margin: 0;
+}
+
+/* Restore margin for zoom control */
+.leaflet-bottom.leaflet-left .leaflet-control-zoom.leaflet-control {
+	margin-left: 10px;
+	margin-bottom: 10px;
+}
+
+.leaflet-bottom.leaflet-left .leaflet-control-zoom.leaflet-control a {
+	background-color: #000;
+	color: #fff;
+}
+
+
+.leaflet-control-layers {
+	border-radius: 0;
+}
+
+.leaflet-control-attribution.leaflet-control {
+	display: none;
+}
+
+/** Header Title Styles **/
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.header {
+  color: #fff;
+  margin: 0;
+  border: 0;
+  padding: 10px 25px 10px 20px;
+  background-color: #000;
+}
+
+#headerTitle {
+  font-size: 45px;
+  margin: 0 15px 0 0;
+  border: 0;
+  border-right: #fff 1px solid;
+  padding: 0 15px 0 0;
+  display: inline;
+  float: left;
+}
+
+#byline {
+  font-size: 15px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  display: inline;
+  list-style-type: none;
+  float: left;
+}
+
+#byline li {
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.leaflet-container .header a {
+	color: #fff;
+}
+
+/** Township / Grid Info Styles **/
+.info {
+	box-shadow: 0 0 15px rgba(0,0,0,0.2);
+	border-radius: 0;
+	color: #fff;
+	text-align: center;
+	display: block;
+	clear: both;
+	margin: 0;
+	border: 0;
+	padding: 0;
+}
+
+.temp {
+	text-transform: lowercase;
+}
+
+.bars {
+	padding: 0;
+	border: 0;
+	margin: 0;
+}
+
+.bar.positive {
+  fill: #ff0000;
+}
+
+.bar.negative {
+  fill: #ff0000;
+}
+
+.x.axis path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1px;
+}
+
+.x.axis text {
+  fill: #fff;
+}
+
+.y.axis path {
+  visibility: hidden;
+}
+
+.y.axis text {
+  fill: #fff;
+}
+
+/** Township / Grid View Toggle Styles **/
+.leaflet-control-layers-expanded {
+	background-color: #000;
+	padding: 10px 10px 5px 10px;
+}
+
+input[type="radio"].layerToggle {
+    display: none;
+}
+
+label.layerToggle {
+    display: block;
+    float: left;
+    margin: 0;
+    border: 0;
+    padding: 4px;
+    cursor: pointer;
+    background-color: #000;
+    color: #fff;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+label.layerToggle.active {
+    color: #ff0000;
+}
+
+#townshipTog, #gridTog, #recenter {
+  cursor: pointer;
+}
+
+#townshipTog.active, #gridTog.active {
+  color: #ff0000;
+}
+
+#recenter {
+  color: rgba(255,255,255,.75);
+  text-align: center;
+  font-weight: bold;
+}
+
+#recenter:hover {
+  color: rgba(255,255,255,1);
+}
+
+#recenter:active {
+  color: #ff0000;
+}
+
+
+/** Legend Styles **/
+.legend {
+  margin: 0;
+  border: 0;
+  padding: 10px 20px 10px 25px;
+  color: #fff;
+  background-color: #000;
+}
+
+#legendTitle {
+  margin: 0 0 5px 0;
+  border: 0;
+  padding: 0;
+  display: block;
+  clear: both;
+}
+
+#labels {
+  margin: 5px 0 0 0;
+  border: 0;
+  padding: 0;
+}
+
+#labelLeft {
+  padding: 0;
+  border: 0;
+  margin: 0;
+  text-align: left;
+  float: left;
+}
+
+#labelRight {
+  padding: 0;
+  border: 0;
+  margin: 0;
+  text-align: right;
+  float: right;
+}
+
+</style>
+</head>
+
+<body>
+<div id="map">
+</div>
+
+<script type="text/javascript" src="libs/js/jquery-2.0.0.min.js"></script>
+<script type="text/javascript" src="libs/js/leaflet.js"></script>
+<script type="text/javascript" src="libs/js/d3.v3.min.js"></script>
+<script type="text/javascript" src="libs/js/simple_statistics.js"></script>
+
+<script type="text/javascript" src="data/townships.js"></script>
+<script type="text/javascript" src="data/grid.js"></script>
+
+<script type="text/javascript">
+
+	// Initialize map and set long, lat, and scale
+	var lng = 22.65;
+	var lat = 114.19;
+	var scale = 11;
+	var map = L.map('map', { zoomControl: false }).setView([lng, lat], scale);
+
+	// Get basemap tiles and add to the map
+	var cloudmade = L.tileLayer('http://{s}.tile.cloudmade.com/{key}/{styleId}/256/{z}/{x}/{y}.png', {
+			key: 'BC9A493B41014CAABB98F0471D759707',
+			styleId: 22677
+		}).addTo(map);
+
+	// Create zoom control in specific location
+	var zoom = L.control.zoom({position: "bottomleft"}).addTo(map);
+
+	// Create a "control" that shows the map title
+	var title = L.control({position: "topleft"});
+
+	title.onAdd = function(map) {
+		this._div = L.DomUtil.create('div', 'header');
+		this._div.innerHTML = '<p id="headerTitle"><a href="/">IN THE MIX</a></p><ul id="byline"><li><a href="https://twitter.com/erhardt">Erhardt Graeff</a></li><li><a href="https://twitter.com/canadeau">Carey Anne Nadeau</a></li><li><a href="https://twitter.com/arouault">Alicia Rouault</a></li></ul>';
+
+		return this._div
+	};
+
+	title.addTo(map);
+
+	// Create a "control" that shows info about townships or grids on hover
+	var info = L.control();
+	var townScale;
+	var gridScale;
+	var currLayer;
+
+	info.onAdd = function (map) {
+		this._div = L.DomUtil.create('div', 'info');
+
+		currLayer = "Township"; // default is Townships as first layer
+		initScales();
+
+		this.update();
+		return this._div;
+	};
+
+	info.update = function (props) {
+		var id;
+		var scale;
+
+		if ((props != null) && (currLayer == "Township")) {
+			name = props.ENAME;
+			id = "t" + props.GBTOWN;
+			scale = townScale;
+		} else if (props != null) {
+			name = props.ENAME + "<br/>(Grid #" + props.PageNumber + ")";
+			id = "g" + props.PageNumber;	
+			scale = gridScale;		
+		}
+
+		this._div.innerHTML = (props ?
+			'<div class="bars"><p><b>' + name + '</b></p><svg class="' + id + '"></svg></div>'
+			: '<div><p class="temp">Hover over a ' + currLayer + '</p></div>');
+
+		if (props != null) {
+			buildBars(props, id, scale);
+		}
+	};
+
+	info.addTo(map);
+
+	// Initializing scales for township and grid indices
+	function initScales() {
+		// Set scale for townships based on Jenks natural breaks computed by simple_statistics.js
+		townScale = d3.scale.threshold()
+			.domain(ss.jenks(townships.features.map(function(d) { return +d.properties.index_town; }), 4))
+			.range(d3.range(4).map(function(i) { return "q" + i + "-4"; }));
+
+		// Set scale for grid squares based on Jenks natural breaks computed by simple_statistics.js
+		gridScale = d3.scale.threshold()
+			.domain(ss.jenks(grid.features.map(function(d) { return +d.properties.index_town; }), 4))
+			.range(d3.range(4).map(function(i) { return "q" + i + "-4"; }));
+	}
+
+	// Create bar graphs for info on townships or grid squares
+	function buildBars(d, id, scale) {
+
+		var dataset = [d.index_emp, d.index_food, d.index_coll, d.index_ind];
+
+	    var margin = {top: 10, right: 5, bottom: 30, left: 15},
+	        w = 180 - margin.left - margin.right,
+	        h = 180 - margin.top - margin.bottom;
+
+	    var y0 = Math.max(Math.abs(d3.min(scale.domain())), Math.abs(d3.max(scale.domain())));
+
+	    var y = d3.scale.linear()
+	        .domain([-y0, y0])
+	        .range([h,0])
+	        .nice()
+
+	    var x = d3.scale.ordinal()
+	        .domain(d3.range(dataset.length))
+	        .rangeRoundBands([0, w], .2);
+
+	    // Prepare X Axis (shows labels)
+	    var indices = ["Emp","Food","Edu","Ind"];
+	    
+	    var formatIndices = function(d) {
+	    	return indices[d % 4];      
+	    }
+
+	    var xAxis = d3.svg.axis()
+			.scale(x)
+			.orient("bottom")
+			.tickSize(0)
+			.tickFormat(formatIndices);
+
+	    // Prepare Y Axis (only shows 0 at x-axis)
+	    var yAxis = d3.svg.axis()
+			.scale(y)
+			.orient("left")
+			.tickSize(0)
+			.tickValues([0])
+			.tickFormat(d3.format("d"));
+
+	    // Find and instantiate svg element in popover, and set dimensions
+	    var svg = d3.select("svg."+id)
+			.attr("width", w + margin.left + margin.right)
+			.attr("height", h + margin.top + margin.bottom)
+			.append("g")
+				.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	    // Create bar graph
+	    svg.selectAll(".bar")
+				.data(dataset)
+			.enter().append("rect")
+				.attr("class", function(d) { return d < 0 ? "bar negative" : "bar positive"; })
+				.attr("y", function(d) { return y(Math.max(0, d)); })
+				.attr("x", function(d, i) { return x(i); })
+				.attr("height", function(d) { return Math.abs(y(d) - y(0)); })
+				.attr("width", x.rangeBand());
+
+	    // Create X Axis
+		svg.append("g")
+			.attr("transform","translate(0,"+y(0)+")") // offset by max height of a bar to get to the middle
+			.attr("class", "x axis")
+			.call(xAxis);
+
+		svg.selectAll(".x.axis text")
+			.attr("transform","translate(0,"+y(0)+")"); // offset by max height of a bar to get to bottom
+
+	    // Create Y Axis
+		svg.append("g")
+			.attr("class", "y axis")
+			.call(yAxis);
+
+		// Strikethrough axis labels where values are null
+		if (d.index_coll == null) {
+			$(".g"+d.PageNumber+" text:contains('Edu')").css("text-decoration","line-through");
+		}
+		if (d.index_ind == null) {
+			$(".g"+d.PageNumber+" text:contains('Ind')").css("text-decoration","line-through");
+		}
+		if (d.index_food == null) {
+			$(".g"+d.PageNumber+" text:contains('Food')").css("text-decoration","line-through");
+		}
+	}
+
+	var townshipsData;
+	var gridData;
+
+	// Colors for Grid Squares
+	var GridRed = ["rgba(63,0,0,1)","rgba(127,0,0,1)","rgba(191,0,0,1)","rgba(255,0,0,1)"];
+
+	// Set color palette for township choropleth
+	var townColor = d3.scale.ordinal()
+		.domain(d3.range(GridRed.length))
+		.range(GridRed);
+
+	// Township styles and functions
+	function townshipsStyle(feature) {
+		return {
+			weight: 0.5,
+			opacity: 1,
+			color: 'white',
+			dashArray: '3',
+			fillOpacity: 0.7,
+			fillColor: townColor(townScale(feature.properties.index_town)),
+			className: 't'+feature.properties.GBTOWN
+		};
+	}
+
+	function tHighlightFeature(e) {
+		var layer = e.target;
+
+		layer.setStyle({
+			weight: 2,
+			color: '#fff',
+			dashArray: '',
+			fillOpacity: 0.7,
+		});
+
+		if (!L.Browser.ie && !L.Browser.opera) {
+			layer.bringToFront();
+		}
+
+		info.update(layer.feature.properties);
+	}
+
+	function tResetHighlight(e) {
+		townshipsData.resetStyle(e.target);
+		info.update();
+	}
+
+	function tZoomToFeature(e) {
+		map.fitBounds(e.target.getBounds());
+	}
+
+	function tOnEachFeature(feature, layer) {		
+		layer.on({
+			mouseover: tHighlightFeature,
+			mouseout: tResetHighlight,
+			click: tZoomToFeature
+		});
+	}
+
+	/** Grid styles and functions **/
+	
+	// Set color palette for grid choropleth
+	var gridColor = d3.scale.ordinal()
+		.domain(d3.range(GridRed.length))
+		.range(GridRed);
+
+	function gridStyle(feature) {
+		return {
+			weight: 0.5,
+			opacity: 1,
+			color: '#fff',
+			dashArray: '3',
+			fillOpacity: 0.7,
+			fillColor: gridColor(gridScale(feature.properties.index_town))
+		};
+	}
+
+	function gHighlightFeature(e) {
+		var layer = e.target;
+
+		layer.setStyle({
+			weight: 2,
+			color: '#fff',
+			dashArray: '',
+			fillOpacity: 0.7
+		});
+
+		if (!L.Browser.ie && !L.Browser.opera) {
+			layer.bringToFront();
+		}
+
+		info.update(layer.feature.properties);
+	}
+
+	function gResetHighlight(e) {
+		gridData.resetStyle(e.target);
+		info.update();
+	}
+
+	function gZoomToFeature(e) {
+		console.log(e.target.getBounds());
+		map.fitBounds(e.target.getBounds());
+	}
+
+
+	function gOnEachFeature(feature, layer) {
+		layer.on({
+			mouseover: gHighlightFeature,
+			mouseout: gResetHighlight,
+			click: gZoomToFeature
+		});			
+	}
+
+	// Add GeoJSON layers for the townships and grid squares
+	townshipsData = L.geoJson(townships, {
+		style: townshipsStyle,
+		onEachFeature: tOnEachFeature
+	}).addTo(map);
+
+	gridData = L.geoJson(grid, {
+		style: gridStyle,
+		onEachFeature: gOnEachFeature
+	}); // don't add to map; will do automatically when toggled to
+
+	// Create a layer control mechanism for toggling between townships and the grid
+	var overlays = {
+		"Townships": townshipsData,
+		"Grid View": gridData
+	}
+
+	L.control.layers(overlays, null, {
+		position: "topright",
+		collapsed: false
+	}).addTo(map);
+
+	// Change currLayer on toggle between townships and the grid, then update info pane
+	map.on('baselayerchange', function (layer, name) {
+		if (layer.name == "Township") {
+			currLayer = "Township";
+		} else {
+			currLayer = "Grid Square";
+		}
+		info.update();
+	});
+
+	// Convert radio buttons for layer toggle to text links
+	// based on http://stackoverflow.com/a/10778686
+	$('input[type="radio"], label').addClass('layerToggle');
+	$('input:checked').parent().addClass('active');
+
+	$('label').on('click', function() {
+		$('label').removeClass('active');
+		$(this).addClass('active');
+	});
+
+	$('label:first').after('<label class="layerToggle" style="cursor:default;margin:0 -4px"><span>::</span></label>');
+
+	/**$('form').after('<div id="recenter" onClick="map.setView([lng, lat], scale);">(recenter map)</div>');**/
+
+	$('div.leaflet-control-layers').append($('div.info')); // move control layers above info
+	$('div.info').removeClass('leaflet-control'); // remove this class so that float style goes away and it will render in the center (forcing float:none on all screws up other controls)
+
+
+	// Create the legend for the map
+	var legend = L.control({position: 'bottomright'});
+
+	legend.onAdd = function (map) {
+
+		var div = L.DomUtil.create('div', 'info legend');
+
+		div.innerHTML = '<p id="legendTitle">INNOVATION POTENTIAL BY LOCALE</p><svg xmlns="http://www.w3.org/2000/svg" id="legendSwatches"></svg><div id="labels"><p id="labelLeft">low</p><p id="labelRight">high</p></div>';
+
+		return div;
+	};
+
+	legend.addTo(map);
+
+	/*** Create Legend ***/
+	// Initialize the legend SVG
+	var legend = d3.select("svg#legendSwatches")
+		.attr("width",$("#legendTitle").width()) // fit to width of #legend div
+		.attr("height", 10)
+	  .append("g")
+	    .attr("class", "legend");
+
+	// Set scale for legend such that the four colors will have equal horizontal spacing
+	var x = d3.scale.linear()
+		.domain([0, GridRed.length-1])
+		.range([0, $("#legendTitle").width()/4*3]);
+
+	// Add color swatch rectanges
+	legend.selectAll("rect")
+		.data(d3.range(0, GridRed.length))
+	  .enter().append("rect")
+		.attr("height", $("svg#legendSwatches").height())
+		.attr("x", function(d) { return x(d); })
+		.attr("width", $("#legendTitle").width()/4)
+		.style("fill", function(d) { return townColor(d); });
+
+</script>
+</body>
+</html>

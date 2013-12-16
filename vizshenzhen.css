@@ -1,0 +1,320 @@
+/* Elements */
+body {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background-color: #000;
+}
+
+h1, h2, h3, p, ul, text, div {
+  font-family: "Open Sans","Gill Sans","Helvetica Neue","Helvetica","Arial",sans-serif;
+  font-weight: lighter;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* IDs */
+#container {
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+#header {
+  color: #fff;
+  margin: 0;
+  border: 0;
+  padding: 10px 25px 10px 20px;
+  top: 0;
+  left: 0;
+  position: absolute;
+  background-color: #000;
+}
+
+#headerTitle {
+  font-size: 45px;
+  margin: 0 15px 0 0;
+  border: 0;
+  border-right: #fff 1px solid;
+  padding: 0 15px 0 0;
+  display: inline;
+  float: left;
+}
+
+#byline {
+  font-size: 15px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  display: inline;
+  list-style-type: none;
+  float: left;
+}
+
+#byline li {
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+#mapToggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+  border: 0;
+  padding: 10px 20px 10px 25px;
+  color: #fff;
+  background-color: #000;
+  font-weight: bold;
+  text-align: center;
+}
+
+#townshipTog, #gridTog, #recenter {
+  cursor: pointer;
+}
+
+#townshipTog.active, #gridTog.active {
+  color: #ff0000;
+}
+
+#recenter {
+  color: rgba(255,255,255,.75);
+}
+
+#recenter:hover {
+  color: rgba(255,255,255,1);
+}
+
+#recenter:active {
+  color: #ff0000;
+}
+
+#map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+#legend {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  margin: 0;
+  border: 0;
+  padding: 10px 20px 10px 25px;
+  color: #fff;
+  background-color: #000;
+}
+
+#legendTitle {
+  margin: 0 0 5px 0;
+  border: 0;
+  padding: 0;
+}
+
+#labels {
+  margin: 5px 0 0 0;
+  border: 0;
+  padding: 0;
+}
+
+#labelLeft {
+  padding: 0;
+  border: 0;
+  margin: 0;
+  text-align: left;
+  float: left;
+}
+
+#labelRight {
+  padding: 0;
+  border: 0;
+  margin: 0;
+  text-align: right;
+  float: right;
+}
+
+#about {
+  position: absolute;
+  top: 0;
+  left: 12%;
+  border: 0;
+  padding: 10px 20px 5px;
+  visibility: hidden;
+  background-color: rgba(0,0,0,0.85);
+  color: #fff;
+}
+
+#about p {
+  margin: 15px 0;
+  border: 0;
+  padding: 0;
+}
+
+#about ul {
+  list-style-type: none;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  clear: none;
+}
+
+#aboutClose {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+}
+
+#aboutLink {
+  position: absolute;
+  bottom: 0px;
+  left: 0px;
+  margin: 0;
+  border: 0;
+  padding: 10px 25px 10px 20px;
+  color: #fff;
+  background-color: #000;
+}
+
+#aboutLink p {
+  cursor: pointer;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+#aboutLink p:hover {
+  color: #ff0000;
+}
+
+#closer {
+  cursor: pointer;
+}
+
+#closer:hover {
+  color: #ff0000;
+}
+
+#aboutDescription {
+  display: block;
+  clear: both;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+/* Classes */
+.aHead {
+  font-weight: bolder;
+  display: inline;
+}
+
+.background {
+  fill: #000;
+  pointer-events: all;
+}
+
+.bar.positive {
+  fill: #ff0000;
+}
+
+.bar.negative {
+  fill: #ff0000;
+}
+
+.gridsquare {
+  stroke-width: 0px;
+  stroke: #000;
+  visibility: hidden;
+  cursor: pointer;
+}
+
+.popoverQuestion {
+  background-color: #fff;
+  color: #000;
+  padding: 0 5px 0 6px;
+  border-radius: 50%;
+  cursor: pointer;
+  position: absolute;
+  right: 8px;
+  font-weight: bold;
+}
+
+.township {
+  stroke: #505050;
+  stroke-opacity: 1;
+  stroke-width: 0px;
+  cursor: pointer;
+}
+
+.township.active {
+  opacity: 0.85;
+}
+
+.waterboundary {
+  fill: #505050;
+}
+
+.x.axis path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1px;
+}
+
+.x.axis text {
+  fill: #fff;
+}
+
+.y.axis path {
+  visibility: hidden;
+}
+
+.y.axis text {
+  fill: #fff;
+}
+
+.zoomer {
+  color: rgba(255,255,255,.75);
+  background-color: #000;
+  padding: 2px, 5px;
+  border: 1px solid rgba(255,255,255,.75);
+  clear: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.zoomer:hover {
+  background-color: rgba(255,255,255,1);
+}
+
+.zoomer:active {
+  background-color: rgba(255,0,0,1);
+}
+
+/* Map tiles */
+.map {
+  position: relative;
+  overflow: hidden;
+}
+
+.layer {
+  position: absolute;
+}
+
+.tile {
+  pointer-events: none;
+  position: absolute;
+  width: 256px;
+  height: 256px;
+}
+
+.info {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+}
