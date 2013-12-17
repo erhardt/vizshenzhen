@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Leaflet Layers Control Example</title>
+<title>IN THE MIX</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="libs/css/leaflet.css">
@@ -22,6 +22,7 @@
 .leaflet-container, text {
     font: 15px "Open Sans","Gill Sans","Helvetica Neue","Helvetica","Arial",sans-serif;
     font-weight: lighter;
+    color: #fff;
 }
 
 .leaflet-top .leaflet-control, 
@@ -60,11 +61,22 @@ a {
   color: inherit;
 }
 
-.header {
-  color: #fff;
+.headerContainer {
+	margin: 0;
+	border: 0;
+  	padding: 10px 25px 10px 20px;
+	color: #fff;
+}
+
+#header {
   margin: 0;
   border: 0;
-  padding: 10px 25px 10px 20px;
+  padding: 0;
+  color: #fff;
+}
+
+#header a {
+  color: #fff;
 }
 
 #headerTitle {
@@ -78,7 +90,6 @@ a {
 }
 
 #byline {
-  font-size: 15px;
   margin: 0;
   border: 0;
   padding: 0;
@@ -93,8 +104,91 @@ a {
   padding: 0;
 }
 
+#aboutLink {
+  display: none;
+  float: left;
+  clear: none;
+  margin: 0 0 0 15px;
+  border: 0;
+  font-weight: bold;
+  color: fff;
+  cursor: pointer;
+  vertical-align: middle;
+
+  -webkit-transform: rotate(-90deg);
+  -moz-transform: rotate(-90deg);
+  -ms-transform: rotate(-90deg);
+  -o-transform: rotate(-90deg);
+  transform: rotate(-90deg);
+
+  /* also accepts left, right, top, bottom coordinates; not required, but a good idea for styling */
+  -webkit-transform-origin: 50% 50%;
+  -moz-transform-origin: 50% 50%;
+  -ms-transform-origin: 50% 50%;
+  -o-transform-origin: 50% 50%;
+  transform-origin: 50% 50%;
+
+  /* Should be unset in IE9+ I think. */
+  filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+}
+
+#aboutLink:hover, #aboutLink:active {
+  color: #ff0000;
+}
+
 .leaflet-container .header a {
+  color: #fff;
+}
+
+/** About Styles **/
+.leaflet-popup-content-wrapper {
+	border-radius: 0;
+	background: rgba(0,0,0,0.8);
+	box-shadow: 0 3px 14px rgba(255,255,255,0.2);
+}
+
+.leaflet-popup-scrolled {
+	border: 0;
+}
+
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+	background: rgba(0,0,0,0.8);
+	box-shadow: 0 3px 14px rgba(255,255,255,0.2);
+}
+
+.leaflet-popup-tip {
+	display: none;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
 	color: #fff;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+	color: #ff0000;
+}
+
+.leaflet-popup-content {
+	margin-top: 30px;
+}
+
+.leaflet-popup-content p {
+	margin: 0 0 15px 0;
+	border: 0;
+	padding: 0 19px 0 0;
+}
+
+.aHead {
+  font-weight: bolder;
+  display: inline;
+}
+
+#popHelp ul {
+  list-style-type: none;
+  margin: 0 0 15px 0;
+  border: 0;
+  padding: 0;
+  clear: none;
 }
 
 /** Township / Grid Info Styles **/
@@ -163,7 +257,6 @@ label.layerToggle {
     border: 0;
     padding: 4px;
     cursor: pointer;
-    background-color: #000;
     color: #fff;
     font-weight: bold;
     text-transform: uppercase;
@@ -202,7 +295,6 @@ label.layerToggle.active {
   border: 0;
   padding: 10px 20px 10px 25px;
   color: #fff;
-  background-color: #000;
 }
 
 #legendTitle {
@@ -253,8 +345,8 @@ label.layerToggle.active {
 <script type="text/javascript">
 
 	// Initialize map and set long, lat, and scale
-	var lng = 22.65;
-	var lat = 114.19;
+	var lat = 22.65;
+	var lng = 114.19;
 	var scale = function() { 
 		var winWidth = $(window).width();
 		// return the right zoom scale for the window width
@@ -270,7 +362,7 @@ label.layerToggle.active {
 		}
 	};
 
-	var map = L.map('map', { zoomControl: false }).setView([lng, lat], scale());
+	var map = L.map('map', { zoomControl: false }).setView([lat, lng], scale());
 
 	// Get basemap tiles and add to the map
 	/*var cloudmade = L.tileLayer('http://{s}.tile.cloudmade.com/{key}/{styleId}/256/{z}/{x}/{y}.png', {
@@ -287,13 +379,44 @@ label.layerToggle.active {
 	var title = L.control({position: "topleft"});
 
 	title.onAdd = function(map) {
-		this._div = L.DomUtil.create('div', 'header');
-		this._div.innerHTML = '<p id="headerTitle"><a href="/">IN THE MIX</a></p><ul id="byline"><li><a href="https://twitter.com/erhardt">Erhardt Graeff</a></li><li><a href="https://twitter.com/canadeau">Carey Anne Nadeau</a></li><li><a href="https://twitter.com/arouault">Alicia Rouault</a></li></ul>';
+		this._div = L.DomUtil.create('div', 'headerContainer');
+
+		this._div.innerHTML = '<div id="header"><p id="headerTitle"><a href="/">IN THE MIX</a></p><ul id="byline"><li><a href="https://twitter.com/erhardt">Erhardt Graeff</a></li><li><a href="https://twitter.com/canadeau">Carey Anne Nadeau</a></li><li><a href="https://twitter.com/arouault">Alicia Rouault</a></li></ul><p id="aboutLink" onClick="openAbout();">about</p></div>';
 
 		return this._div
 	};
 
 	title.addTo(map);
+
+	// Show/Hide aboutLink in Header
+	$('div.headerContainer').hover(
+		function() {
+			$('#aboutLink').show();
+			$('#aboutLink').css("height", $('#headerTitle').height());
+			$('.headerContainer').css("padding-right", "0");
+			$('#byline')
+				.css("border-right", "1px solid #fff")
+				.css("padding", "0 15px 1px 0");
+		}, function() {
+			$('#aboutLink').hide();
+			$('.headerContainer').css("padding-right", "10px");
+			$('#byline')
+				.css("border-right", "0")
+				.css("padding", "0");
+	});
+
+	// Add popup with About Description to the map
+	var about = L.popup( { closeOnClick: false, autoPanPaddingTopLeft: L.point(0,$(".leaflet-top.leaflet-left").outerHeight()+10), autoPanPaddingBottomRight: L.point(0, $(".leaflet-bottom.leaflet-right").outerHeight()+10), maxWidth: $(window).width()*0.75, maxHeight: $(window).height()*0.75 })
+		.setLatLng(L.latLng(map.getCenter().lat-((map.getCenter().lat-map.getBounds()._southWest.lat)*.75), map.getCenter().lng))
+		.setContent('<p><span class="aHead">ABOUT</span><br/>IN THE MIX visualizes data from the popular social media platform Weibo, along with 2000 Census data on four indicators representing potential innovation by township in Shenzhen, China. The premise of this index is that young, hip Weibo users can be a proxy for the location of an emergent "creative class"&mdash;characterized by diversity of workers and industries, access to cultural amenities and key infrastructure. Diverse and accessible places cultivate innovation and information spillover. Exploring 2000 Census data on what industry workers are employed in by township, we see the mix of workers that live in Shenzhen. 2013 Weibo check-ins provide a contemporary proxy for what young creatives might experience near libraries, public transportation, food and drink venues.</p><div id="popHelp"><span class="aHead">INNOVATION POTENTIAL INDEX =</span><ul><li>Emp: Diversity in Workers by Type of Industry (Census)</li><li>Food: Presence of non-local Cuisine/Diverse Amenities (Weibo)</li><li>Edu: Presence of Higher Education (Weibo)</li><li>Ind: Presence of Industrial Parks (Weibo)</li></ul></div><p>The information is represented at two scales, the first by township in a traditional choropleth map, the other as a grid overlay, showing a smaller scale look at the data per 1,000 meters square. Each township and grid square contains in-depth data on the specific make up for each location.</p><p><span class="aHead">METHOD</span><br/>In order to combine shares of different indicators (industrial parks, higher education, non-local cuisine, and diversity in workers by type of Industry) each is first standardized using the inter-decile range standardization method. This method compares each value of a variable (X<sub>i</sub>) to the median (X<sub>med</sub>), which is then divided by the distance between the value of that variable at the 90th percentile of the distribution (X<sub>90</sub>) and the 10th percentile (X<sub>10</sub>).  After each has been standardized, an average across the indicators (industrial parks, higher education, non-local cuisine, and diversity in workers by type of Industry) is calculated.</p><p>Standardized Score = 1/n * &sum; ((x<sub>i</sub> - x<sub>med</sub> ) / (x<sub>90</sub> - x<sub>10</sub>))</p><p><span class="aHead">SOURCES</span><br />2013 Weibo Data, 2000 Chinese Census Data</p><p><i>IN THE MIX is a data visualization project produced at MIT’s Department of Urban Studies and Planning for the forthcoming 2013 Hong Kong-Shenzhen Biennale.</i></p>');
+
+	function openAbout() {
+		about.openOn(map);
+	}
+
+	function closeAbout() {
+		return null;
+	}
 
 	// Create a "control" that shows info about townships or grids on hover
 	var info = L.control();
